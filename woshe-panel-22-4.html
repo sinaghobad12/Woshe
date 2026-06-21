@@ -1,0 +1,2179 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل وشه</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--green:#3d6b4f;--gl:#5a8f6b;--gp:#e8f2ec;--cream:#faf7f2;--dark:#1e2820;--gray:#6b7c6e;--border:#d4e0d8;--red:#c0392b;--gold:#b8860b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Vazirmatn',sans-serif;background:var(--cream);color:var(--dark);min-height:100vh;font-size:15px;}
+
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:var(--green);display:flex;align-items:center;justify-content:center;z-index:1000;}
+.login-box{background:white;border-radius:16px;padding:32px 28px;width:320px;text-align:center;}
+.login-box h2{color:var(--green);font-size:1.4rem;margin-bottom:6px;}
+.login-box p{color:var(--gray);font-size:0.9rem;margin-bottom:24px;}
+.login-box input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'Vazirmatn',sans-serif;font-size:1rem;margin-bottom:10px;outline:none;}
+.login-box input:focus{border-color:var(--green);}
+.login-box button{width:100%;padding:12px;background:var(--green);color:white;border:none;border-radius:8px;font-family:'Vazirmatn',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;margin-top:4px;}
+.login-box button:disabled{opacity:0.6;cursor:default;}
+.login-error{color:var(--red);font-size:0.88rem;margin-top:8px;display:none;}
+
+/* APP */
+#app{display:none;}
+header{background:var(--green);color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:1.05rem;font-weight:600;}
+.header-right{display:flex;align-items:center;gap:10px;font-size:0.85rem;opacity:0.9;}
+.logout-btn{background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 10px;border-radius:6px;font-family:'Vazirmatn',sans-serif;font-size:0.82rem;cursor:pointer;}
+.tabs{display:flex;background:white;border-bottom:2px solid var(--border);padding:0 6px;overflow-x:auto;}
+.tab{padding:11px 12px;cursor:pointer;font-size:0.85rem;font-weight:500;color:var(--gray);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;}
+.tab.active{color:var(--green);border-bottom-color:var(--green);}
+.page{display:none;padding:14px;max-width:700px;margin:0 auto;}
+.page#tab-list,.page#tab-assign{max-width:1100px;}
+.orders-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;}
+.orders-grid .order-card{margin-bottom:0;}
+.page.active{display:block;}
+.card{background:white;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--border);margin-bottom:14px;}
+.card h2{font-size:1rem;font-weight:600;color:var(--green);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--gp);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;}
+.form-row.single{grid-template-columns:1fr;}
+.field label{display:block;font-size:0.82rem;font-weight:500;color:var(--gray);margin-bottom:3px;}
+.field input,.field select,.field textarea{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:'Vazirmatn',sans-serif;font-size:0.93rem;color:var(--dark);background:var(--cream);outline:none;transition:border-color 0.2s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green);background:white;}
+.field textarea{resize:vertical;min-height:55px;}
+.private-box{background:#fff8e1;border:1.5px dashed #ffe082;border-radius:10px;padding:12px;margin-bottom:9px;}
+.private-label{font-size:0.8rem;color:var(--gold);font-weight:600;margin-bottom:8px;}
+.diff-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed #ffe082;}
+.diff-val{font-size:1rem;font-weight:700;color:var(--green);}
+.btn{padding:10px 18px;border:none;border-radius:8px;font-family:'Vazirmatn',sans-serif;font-size:0.92rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.btn-primary{background:var(--green);color:white;width:100%;margin-top:6px;}
+.btn-primary:hover{background:var(--gl);}
+.btn-secondary{background:var(--gp);color:var(--green);}
+.btn-danger{background:#fde8e8;color:var(--red);}
+.btn-delivered{background:#e8f5e9;color:#2e7d32;border:1.5px solid #a5d6a7;}
+.btn-sm{padding:6px 12px;font-size:0.83rem;}
+.btn:disabled{opacity:0.55;cursor:default;}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--green);color:white;padding:10px 20px;border-radius:24px;font-size:0.93rem;font-weight:500;z-index:9999;transition:transform 0.3s;box-shadow:0 4px 16px rgba(0,0,0,0.2);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.error{background:var(--red);}
+
+/* Notification bell */
+.notif-bell{position:relative;cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 10px;border-radius:6px;font-family:'Vazirmatn',sans-serif;font-size:0.82rem;}
+.notif-badge{position:absolute;top:-4px;right:-4px;background:#e53935;color:white;border-radius:50%;width:18px;height:18px;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;}
+.notif-panel{position:fixed;top:52px;left:10px;right:10px;max-width:400px;margin:auto;background:white;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);z-index:3000;border:1.5px solid var(--border);display:none;max-height:70vh;overflow-y:auto;}
+.notif-panel.open{display:block;}
+.notif-panel-header{padding:12px 14px;border-bottom:1px solid var(--gp);display:flex;justify-content:space-between;align-items:center;}
+.notif-panel-header span{font-weight:700;font-size:0.9rem;color:var(--green);}
+.notif-panel-header button{background:none;border:none;font-size:0.78rem;color:var(--gray);cursor:pointer;font-family:'Vazirmatn',sans-serif;}
+.notif-item{padding:11px 14px;border-bottom:1px solid var(--gp);font-size:0.85rem;line-height:1.6;}
+.notif-item:last-child{border-bottom:none;}
+.notif-item.unread{background:#f0fff4;}
+.notif-item .notif-time{font-size:0.72rem;color:var(--gray);margin-top:2px;}
+.notif-empty{padding:20px;text-align:center;color:var(--gray);font-size:0.85rem;}
+
+/* Date picker */
+.date-picker-wrap{position:relative;}
+.date-display{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Vazirmatn',sans-serif;font-size:0.84rem;background:var(--cream);cursor:pointer;text-align:right;}
+.date-display:focus,.date-display.open{border-color:var(--green);background:white;}
+.cal-popup{position:absolute;top:100%;right:0;background:white;border:1.5px solid var(--border);border-radius:12px;padding:12px;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,0.12);width:260px;display:none;}
+.cal-popup.open{display:block;}
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.cal-header span{font-size:0.85rem;font-weight:600;color:var(--green);}
+.cal-nav{background:none;border:none;cursor:pointer;font-size:1rem;color:var(--green);padding:2px 6px;}
+.cal-days-header{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;}
+.cal-days-header span{text-align:center;font-size:0.68rem;color:var(--gray);font-weight:600;padding:2px;}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-day{text-align:center;padding:5px 2px;border-radius:6px;cursor:pointer;font-size:0.78rem;transition:all 0.15s;}
+.cal-day:hover{background:var(--gp);}
+.cal-day.selected{background:var(--green);color:white;}
+.cal-day.today{box-shadow:0 0 0 2px var(--red);color:var(--red);font-weight:700;}
+.cal-day.today.selected{background:var(--green);color:white;box-shadow:0 0 0 2px var(--red);}
+.cal-day.empty{cursor:default;}
+.cal-month-sel{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;}
+.cal-month-btn{padding:6px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-family:'Vazirmatn',sans-serif;font-size:0.78rem;}
+.cal-month-btn:hover{background:var(--gp);}
+.cal-month-btn.active{background:var(--green);color:white;border-color:var(--green);}
+
+/* Order cards - افقی */
+.order-card{background:white;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;}
+.order-card.delivered{border-color:#a5d6a7;background:#f1f8e9;}
+.order-card.urgent{border:2.5px solid var(--red);}
+.order-card-right{flex:1;min-width:0;}
+.order-card-left{display:flex;flex-direction:column;gap:6px;min-width:130px;align-items:flex-end;}
+.order-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.order-card-num{font-weight:700;color:var(--green);font-size:0.96rem;}
+.order-card-meta{font-size:0.85rem;color:var(--gray);line-height:1.9;}
+.order-card-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.76rem;font-weight:600;}
+.badge-green{background:var(--gp);color:var(--green);}
+.badge-yellow{background:#fff8e1;color:var(--gold);}
+.badge-blue{background:#e3f2fd;color:#1565c0;}
+.badge-delivered{background:#e8f5e9;color:#2e7d32;}
+.badge-urgent{background:#fde8e8;color:var(--red);}
+/* سمپل */
+.sample-btn{background:#f3e8ff;color:#6a1b9a;border:1.5px solid #ce93d8;border-radius:8px;padding:9px 18px;font-family:'Vazirmatn',sans-serif;font-size:0.92rem;font-weight:600;cursor:pointer;margin-right:8px;}
+.sample-btn:hover{background:#e1bee7;}
+
+/* Multi image upload */
+.img-upload-area{border:2px dashed var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;}
+.img-upload-area:hover{border-color:var(--green);}
+.img-upload-area p{font-size:0.85rem;color:var(--gray);margin-top:4px;}
+.img-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.img-thumb-wrap{position:relative;width:70px;height:70px;}
+.img-thumb-wrap img{width:70px;height:70px;object-fit:cover;border-radius:8px;}
+.img-thumb-del{position:absolute;top:-5px;right:-5px;background:var(--red);color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:0.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
+.delivery-imgs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.delivery-imgs img{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1.5px solid #a5d6a7;cursor:pointer;}
+
+/* Report */
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.stat-box{background:var(--gp);border-radius:10px;padding:12px;text-align:center;}
+.stat-box .val{font-size:1.1rem;font-weight:700;color:var(--green);}
+.stat-box .lbl{font-size:0.76rem;color:var(--gray);margin-top:3px;}
+
+/* Settings */
+.driver-item{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--gp);}
+.driver-item:last-child{border-bottom:none;}
+.user-item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--gp);}
+.user-item:last-child{border-bottom:none;}
+.report-filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-end;}
+.report-filters .field{flex:1;min-width:120px;}
+.settings-note{font-size:0.78rem;color:var(--gray);background:var(--gp);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.7;}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:white;border-radius:16px;width:100%;max-width:540px;padding:20px;margin:auto;position:relative;}
+.modal-box h3{font-size:1rem;font-weight:700;color:var(--green);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--gp);}
+.modal-close{position:absolute;top:14px;left:14px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--gray);line-height:1;}
+
+/* Driver panel */
+#driverApp{display:none;}
+.driver-tabs{display:flex;background:white;border-bottom:2px solid var(--border);}
+.driver-tab{flex:1;padding:13px;text-align:center;cursor:pointer;font-size:0.92rem;font-weight:600;color:var(--gray);border-bottom:3px solid transparent;margin-bottom:-2px;}
+.driver-tab.active{color:var(--green);border-bottom-color:var(--green);}
+.driver-page{display:none;padding:14px;max-width:600px;margin:0 auto;}
+.driver-page.active{display:block;}
+.d-card{background:white;border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.d-card.delivered-card{border-color:#a5d6a7;background:#f9fbe7;}
+.d-card.urgent-card{border:2.5px solid var(--red);}
+.d-card-num{font-weight:700;color:var(--green);font-size:1rem;margin-bottom:8px;}
+.d-card-row{font-size:0.92rem;color:var(--gray);line-height:2.2;}
+.d-card-row b{color:#111;font-weight:700;}
+.deliver-btn{width:100%;padding:11px;background:#2e7d32;color:white;border:none;border-radius:8px;font-family:'Vazirmatn',sans-serif;font-size:0.96rem;font-weight:700;cursor:pointer;margin-top:10px;}
+.deliver-btn:hover{background:#1b5e20;}
+.deliver-btn:disabled{opacity:0.6;cursor:default;}
+.upload-proof{margin-top:10px;}
+.upload-proof-area{border:2px dashed #a5d6a7;border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:#f1f8e9;}
+.upload-proof-area p{font-size:0.84rem;color:#558b2f;margin-top:3px;}
+
+/* Image lightbox */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:5000;display:none;align-items:center;justify-content:center;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:95vw;max-height:92vh;border-radius:8px;}
+.lightbox-close{position:absolute;top:16px;left:16px;background:rgba(255,255,255,0.2);border:none;color:white;font-size:1.4rem;cursor:pointer;border-radius:50%;width:36px;height:36px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h2>وشه</h2>
+    <p>پنل مدیریت سفارشات</p>
+    <input type="text" id="loginUser" placeholder="نام کاربری" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="رمز عبور" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()" id="loginBtn">ورود</button>
+    <div class="login-error" id="loginError">نام کاربری یا رمز اشتباه است</div>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="app">
+  <header>
+    <h1>پنل مدیریت وشه</h1>
+    <div class="header-right">
+      <span id="orderCount"></span>
+      <span id="currentUserLabel"></span>
+      <button class="notif-bell" onclick="toggleNotifPanel()" id="notifBell">&#128276;
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <button class="logout-btn" onclick="doLogout()">خروج</button>
+    </div>
+  </header>
+  <!-- Notification Panel -->
+  <div class="notif-panel" id="notifPanel">
+    <div class="notif-panel-header">
+      <span>اعلان‌های تحویل</span>
+      <button onclick="clearNotifs()">پاک کردن همه</button>
+    </div>
+    <div id="notifList"><div class="notif-empty">اعلانی وجود ندارد</div></div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('new',this)">ثبت سفارش</div>
+    <div class="tab" onclick="showTab('assign',this)">تخصیص راننده</div>
+    <div class="tab" onclick="showTab('list',this)">لیست سفارشات</div>
+    <div class="tab" onclick="showTab('report',this)">گزارش</div>
+    <div class="tab" onclick="showTab('settings',this)">تنظیمات</div>
+    <div class="tab" onclick="refreshApp()" style="margin-right:auto;color:var(--green);font-weight:700">بارگذاری مجدد</div>
+  </div>
+
+  <!-- ثبت سفارش -->
+  <div class="page active" id="tab-new">
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <button class="btn btn-primary" style="flex:1;margin-top:0" onclick="showSection('orderForm')">ثبت سفارش جدید</button>
+      <button class="sample-btn" onclick="showSection('sampleForm')">ثبت سمپل</button>
+    </div>
+
+    <!-- فرم ثبت سمپل -->
+    <div id="sampleForm" style="display:none">
+    <div class="card">
+      <h2>ثبت سمپل</h2>
+      <div class="form-row single">
+        <div class="field"><label>نوع</label>
+          <select id="sampleType" onchange="onSampleTypeChange()">
+            <option value="">— انتخاب کنید —</option>
+            <option value="unhappy">مشتری ناراضی (برگشتی)</option>
+            <option value="transfer">جابه‌جایی</option>
+            <option value="personal">کارهای شخصی</option>
+            <option value="sample">سمپل</option>
+            <option value="return">برگشتی از مغازه</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- فیلدهای مشترک -->
+      <div id="sampleCommon" style="display:none">
+        <div class="form-row single">
+          <div class="field"><label>آدرس *</label><input type="text" id="sampleAddress" placeholder="آدرس مقصد"></div>
+        </div>
+        <div id="sampleDateSlotRow" class="form-row">
+          <div class="field"><label>تاریخ</label>
+            <div class="date-picker-wrap">
+              <div class="date-display" id="sampleDateDisplay" onclick="toggleCal('sampleDate')" tabindex="0">انتخاب تاریخ</div>
+              <input type="hidden" id="sampleDate">
+              <div class="cal-popup" id="cal-sampleDate"></div>
+            </div>
+          </div>
+          <div class="field" id="sampleTimeSlotField"><label>بازه تحویل</label><input type="text" id="sampleTimeSlot" placeholder="مثلاً: عصر"></div>
+        </div>
+        <div class="form-row single">
+          <div class="field"><label>توضیحات</label><textarea id="sampleNotes" placeholder="توضیحات..."></textarea></div>
+        </div>
+        <!-- قیمت مشترک برای همه انواع -->
+        <div class="private-box" id="samplePriceBox" style="display:none">
+          <div class="private-label">اطلاعات مالی — فقط برای شما</div>
+          <div class="form-row">
+            <div class="field"><label>دریافتی از مشتری</label><input type="number" id="sampleSalePrice" placeholder="تومان" oninput="calcSampleDiff()"></div>
+            <div class="field"><label>پرداختی به راننده</label><input type="number" id="sampleDriverPrice" placeholder="تومان" oninput="calcSampleDiff()"></div>
+          </div>
+          <div class="diff-row">
+            <span style="font-size:0.78rem;color:var(--gold)">سود:</span>
+            <span class="diff-val" id="sampleDiffVal">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- فیلدهای جابه‌جایی -->
+      <div id="sampleTransferFields" style="display:none">
+        <div class="form-row single">
+          <div class="field"><label>مبدا *</label><input type="text" id="sampleOrigin" placeholder="آدرس مبدا"></div>
+        </div>
+        <div class="field" style="margin-bottom:9px"><label>فروشنده</label>
+          <select id="sampleTransferSeller">
+            <option value="">— انتخاب کنید —</option>
+            <option>تیانا</option><option>الهه صوری</option><option>الی</option><option>ریحانه</option>
+            <option>ریتا</option><option>آوا</option><option>سبا</option><option>سمانه</option><option>لیا</option><option>هیدا</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- فیلدهای مشتری ناراضی -->
+      <div id="sampleUnhappyFields" style="display:none">
+        <div class="field" style="margin-bottom:9px"><label>فروشنده</label>
+          <select id="sampleUnhappySeller">
+            <option value="">— انتخاب کنید —</option>
+            <option>تیانا</option><option>الهه صوری</option><option>الی</option><option>ریحانه</option>
+            <option>ریتا</option><option>آوا</option><option>سبا</option><option>سمانه</option><option>لیا</option><option>هیدا</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- فیلدهای کارهای شخصی -->
+      <div id="samplePersonalFields" style="display:none">
+        <div class="field" style="margin-bottom:9px"><label>نام</label>
+          <select id="samplePersonName">
+            <option value="">— انتخاب کنید —</option>
+            <option>خانم سبا</option><option>خانم سارا</option><option>آقای مختاری</option><option>آقای رضا</option><option>آقای اشکان</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- فیلدهای سمپل -->
+      <div id="sampleSampleFields" style="display:none">
+        <div class="field" style="margin-bottom:9px"><label>استور</label>
+          <select id="sampleStore">
+            <option value="">— انتخاب کنید —</option>
+            <option>استور فرشته</option><option>استور زعفرانیه</option><option>استور فرمانیه</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- فیلدهای برگشتی از مغازه -->
+      <div id="sampleReturnFields" style="display:none">
+        <div class="field" style="margin-bottom:9px"><label>استور</label>
+          <select id="sampleReturnStore">
+            <option value="">— انتخاب کنید —</option>
+            <option>استور فرشته</option><option>استور زعفرانیه</option><option>استور فرمانیه</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveSample()" id="saveSampleBtn" style="margin-top:6px">ذخیره سمپل</button>
+    </div>
+    </div>
+
+    <!-- فرم ثبت سفارش اصلی -->
+    <div id="orderForm">
+    <div class="card">
+      <h2>ثبت سفارش جدید</h2>
+      <div class="form-row">
+        <div class="field"><label>شماره سفارش *</label><input type="text" id="orderId" placeholder="۱۰۰۱"></div>
+        <div class="field"><label>نوع سفارش</label>
+          <select id="orderType"><option>گل</option><option>کیک</option><option>گل و کیک</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>منبع تامین</label>
+          <select id="supplySource">
+            <option value="">— انتخاب کنید —</option>
+            <option>کارگاه</option><option>زعفرانیه</option><option>فرشته</option><option>فرمانیه</option>
+          </select>
+        </div>
+        <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:22px;">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:0.9rem;font-weight:600;color:var(--red);margin:0">
+            <input type="checkbox" id="isUrgent" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red)">
+            فوری
+          </label>
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="field"><label>نام محصول *</label><input type="text" id="product" placeholder="نام محصول"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>بارکد محصول</label><input type="text" id="barcode" placeholder="بارکد" style="direction:ltr"></div>
+        <div class="field"><label>نام فروشنده</label>
+          <select id="seller">
+            <option value="">— انتخاب کنید —</option>
+            <option>تیانا</option><option>الهه صوری</option><option>الی</option><option>ریحانه</option>
+            <option>ریتا</option><option>آوا</option><option>سبا</option><option>سمانه</option><option>لیا</option><option>هیدا</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>نام فرستنده</label><input type="text" id="sender" placeholder="نام خریدار"></div>
+        <div class="field"><label>شماره فرستنده</label><input type="tel" id="senderPhone" placeholder="09..." style="direction:ltr"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>نام گیرنده *</label><input type="text" id="receiver" placeholder="نام گیرنده"></div>
+        <div class="field"><label>شماره گیرنده</label><input type="tel" id="receiverPhone" placeholder="09..." style="direction:ltr"></div>
+      </div>
+      <div class="form-row single">
+        <div class="field"><label>آدرس تحویل *</label><input type="text" id="address" placeholder="آدرس کامل"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>تاریخ تحویل *</label>
+          <div class="date-picker-wrap">
+            <div class="date-display" id="deliveryDateDisplay" onclick="toggleCal('delivery')" tabindex="0">انتخاب تاریخ</div>
+            <input type="hidden" id="deliveryDate">
+            <div class="cal-popup" id="cal-delivery"></div>
+          </div>
+        </div>
+        <div class="field"><label>بازه تحویل <span style="font-size:0.7rem;color:var(--gray)">(برای راننده)</span></label><input type="text" id="timeSlot" placeholder="مثلاً: عصر، بعد از ظهر"></div>
+      </div>
+      <div class="private-box">
+        <div class="private-label">بازه زمانی داخلی — فقط برای شما</div>
+        <div class="field">
+          <select id="internalSlot">
+            <option value="">— انتخاب کنید —</option>
+            <option value="11-16">۱۱ تا ۱۶</option>
+            <option value="16-21">۱۶ تا ۲۱</option>
+          </select>
+        </div>
+      </div>
+      <div class="private-box">
+        <div class="private-label">اطلاعات مالی — فقط برای شما</div>
+        <div class="form-row">
+          <div class="field"><label>دریافتی از مشتری</label><input type="number" id="salePrice" placeholder="تومان" oninput="calcDiff()"></div>
+          <div class="field"><label>پرداختی به راننده</label><input type="number" id="driverPrice" placeholder="تومان" oninput="calcDiff()"></div>
+        </div>
+        <div class="diff-row">
+          <span style="font-size:0.78rem;color:var(--gold)">سود این سفارش:</span>
+          <span class="diff-val" id="diffVal">—</span>
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="field"><label>توضیحات</label><textarea id="notes" placeholder="توضیحات اضافه..."></textarea></div>
+      </div>
+      <div class="form-row single">
+        <div class="field">
+          <label>عکس‌های محصول (می‌توانید چند عکس انتخاب کنید)</label>
+          <div class="img-upload-area" onclick="document.getElementById('imgInput').click()">
+            <div style="font-size:1.4rem">📷</div>
+            <p>برای آپلود عکس کلیک کنید</p>
+            <input type="file" id="imgInput" accept="image/*" multiple style="display:none" onchange="previewImgs(this,'imgThumbs','newImgData')">
+          </div>
+          <div class="img-thumbs" id="imgThumbs"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveOrder()" id="saveOrderBtn">ذخیره سفارش</button>
+    </div>
+    </div><!-- end orderForm -->
+  </div>
+
+  <!-- تخصیص راننده -->
+  <div class="page" id="tab-assign">
+    <div class="card">
+      <h2>تخصیص سفارشات به رانندگان</h2>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <input type="text" id="assignSearchQ" placeholder="جستجو (نام، آدرس، راننده...)" oninput="renderAssignList()" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Vazirmatn',sans-serif;font-size:0.82rem;">
+        <select id="assignFilterStatus" onchange="renderAssignList()" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Vazirmatn',sans-serif;font-size:0.82rem;">
+          <option value="unassigned">بدون راننده</option>
+          <option value="all">همه</option>
+          <option value="assigned">تخصیص یافته</option>
+        </select>
+        <select id="assignLimit" onchange="renderAssignList()" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Vazirmatn',sans-serif;font-size:0.82rem;">
+          <option value="30">۳۰ تا</option>
+          <option value="50">۵۰ تا</option>
+          <option value="100">۱۰۰ تا</option>
+        </select>
+      </div>
+      <div id="assignList"></div>
+    </div>
+  </div>
+
+  <!-- لیست سفارشات -->
+  <div class="page" id="tab-list">
+    <div class="card">
+      <h2>لیست سفارشات</h2>
+      <div class="report-filters">
+        <div class="field"><label>جستجو (نام، آدرس، راننده...)</label><input type="text" id="searchQ" placeholder="جستجو..." oninput="renderList()"></div>
+        <div class="field"><label>وضعیت</label>
+          <select id="listStatus" onchange="renderList()">
+            <option value="">همه</option>
+            <option value="unassigned">بدون راننده</option>
+            <option value="assigned">تخصیص یافته</option>
+            <option value="delivered">تحویل شده</option>
+          </select>
+        </div>
+        <div class="field"><label>تاریخ تحویل</label>
+          <div class="date-picker-wrap">
+            <div class="date-display" id="listDateDisplay" onclick="toggleCal('listDate')" tabindex="0">همه تاریخ‌ها</div>
+            <input type="hidden" id="listDate">
+            <div class="cal-popup" id="cal-listDate"></div>
+          </div>
+        </div>
+        <div class="field"><label>بازه زمانی</label>
+          <select id="listSlotFilter" onchange="renderList()">
+            <option value="">همه</option>
+            <option value="11-16">۱۱ تا ۱۶</option>
+            <option value="16-21">۱۶ تا ۲۱</option>
+          </select>
+        </div>
+        <div class="field"><label>تعداد نمایش</label>
+          <select id="listLimit" onchange="renderList()">
+            <option value="30">۳۰ تا</option>
+            <option value="50">۵۰ تا</option>
+            <option value="100">۱۰۰ تا</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearListDate()" style="align-self:flex-end;white-space:nowrap">پاک‌کردن تاریخ</button>
+      </div>
+      <div id="ordersList"><p style="color:var(--gray);text-align:center;padding:20px">سفارشی ثبت نشده</p></div>
+    </div>
+  </div>
+
+  <!-- گزارش -->
+  <div class="page" id="tab-report">
+    <div class="card">
+      <h2>گزارش</h2>
+      <div class="report-filters">
+        <div class="field"><label>از تاریخ</label>
+          <div class="date-picker-wrap">
+            <div class="date-display" id="repFromDisplay" onclick="toggleCal('repFrom')" tabindex="0">انتخاب تاریخ</div>
+            <input type="hidden" id="repFrom">
+            <div class="cal-popup" id="cal-repFrom"></div>
+          </div>
+        </div>
+        <div class="field"><label>تا تاریخ</label>
+          <div class="date-picker-wrap">
+            <div class="date-display" id="repToDisplay" onclick="toggleCal('repTo')" tabindex="0">انتخاب تاریخ</div>
+            <input type="hidden" id="repTo">
+            <div class="cal-popup" id="cal-repTo"></div>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="generateReport()">نمایش</button>
+      </div>
+      <div id="reportStats"></div>
+      <button class="btn btn-primary" onclick="exportExcel()" style="margin-top:6px">دانلود اکسل</button>
+    </div>
+  </div>
+
+  <!-- تنظیمات -->
+  <div class="page" id="tab-settings">
+    <div class="card">
+      <h2>مدیریت رانندگان</h2>
+      <div class="form-row">
+        <div class="field"><label>نام راننده</label><input type="text" id="driverName" placeholder="نام کامل"></div>
+        <div class="field"><label>نام کاربری</label><input type="text" id="driverUsername" placeholder="username" style="direction:ltr"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>رمز عبور</label><input type="password" id="driverPassword" placeholder="password" style="direction:ltr"></div>
+        <div class="field"><label>آژانس</label>
+          <select id="driverAgency">
+            <option value="">— انتخاب کنید —</option>
+            <option>آژانس ۱</option><option>آژانس ۲</option><option>آژانس ۳</option><option>مستقل</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="addDriverBtn" onclick="addDriver()" style="margin-bottom:12px">افزودن راننده</button>
+      <div id="driversList"></div>
+    </div>
+
+    <div class="card">
+      <h2>مدیریت کاربران (ادمین)</h2>
+      <div class="form-row single">
+        <div class="field"><label>نام مدیر</label><input type="text" id="newName" placeholder="نام کامل"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>نام کاربری</label><input type="text" id="newUsername" placeholder="username" style="direction:ltr"></div>
+        <div class="field"><label>رمز عبور</label><input type="password" id="newPassword" placeholder="password" style="direction:ltr"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="addUserBtn" onclick="addUser()" style="margin-bottom:12px">افزودن ادمین</button>
+      <div id="usersList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DRIVER APP -->
+<div id="driverApp">
+  <header>
+    <h1>پنل راننده وشه</h1>
+    <div class="header-right">
+      <span id="driverNameLabel"></span>
+      <button class="logout-btn" onclick="doLogout()">خروج</button>
+    </div>
+  </header>
+  <div class="driver-tabs">
+    <div class="driver-tab active" onclick="showDriverTab('pending',this)">در انتظار تحویل</div>
+    <div class="driver-tab" onclick="showDriverTab('done',this)">تحویل شده</div>
+    <div class="driver-tab" onclick="refreshApp()" style="margin-right:auto;color:var(--green);font-weight:700">بارگذاری مجدد</div>
+  </div>
+  <div class="driver-page active" id="dtab-pending">
+    <div id="driverPendingList"><p style="color:var(--gray);text-align:center;padding:30px">سفارشی در انتظار تحویل ندارید</p></div>
+  </div>
+  <div class="driver-page" id="dtab-done">
+    <div style="padding:12px 14px;background:white;border-bottom:1px solid var(--border);">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="date-picker-wrap" style="flex:1">
+          <div class="date-display" id="driverDoneDateDisplay" onclick="toggleCal('driverDoneDate')" tabindex="0">همه تاریخ‌ها</div>
+          <input type="hidden" id="driverDoneDate">
+          <div class="cal-popup" id="cal-driverDoneDate"></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearDriverDoneDate()">پاک‌کردن</button>
+      </div>
+    </div>
+    <div id="driverDoneList"><p style="color:var(--gray);text-align:center;padding:30px">هنوز سفارشی تحویل نداده‌اید</p></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="">
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeEditModal()">✕</button>
+    <h3>ویرایش سفارش</h3>
+    <input type="hidden" id="editId">
+    <div class="form-row">
+      <div class="field"><label>شماره سفارش *</label><input type="text" id="editOrderId"></div>
+      <div class="field"><label>نوع سفارش</label>
+        <select id="editOrderType"><option>گل</option><option>کیک</option><option>گل و کیک</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>منبع تامین</label>
+        <select id="editSupplySource">
+          <option value="">— انتخاب کنید —</option>
+          <option>کارگاه</option><option>زعفرانیه</option><option>فرشته</option><option>فرمانیه</option>
+        </select>
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:22px;">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:0.9rem;font-weight:600;color:var(--red);margin:0">
+          <input type="checkbox" id="editIsUrgent" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red)">
+          فوری
+        </label>
+      </div>
+    </div>
+    <div class="form-row single">
+      <div class="field"><label>نام محصول *</label><input type="text" id="editProduct"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>بارکد</label><input type="text" id="editBarcode" style="direction:ltr"></div>
+      <div class="field"><label>فروشنده</label>
+        <select id="editSeller">
+          <option value="">— انتخاب کنید —</option>
+          <option>تیانا</option><option>الهه صوری</option><option>الی</option><option>ریحانه</option>
+          <option>ریتا</option><option>آوا</option><option>سبا</option><option>سمانه</option><option>لیا</option><option>هیدا</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>نام فرستنده</label><input type="text" id="editSender"></div>
+      <div class="field"><label>شماره فرستنده</label><input type="tel" id="editSenderPhone" style="direction:ltr"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>نام گیرنده *</label><input type="text" id="editReceiver"></div>
+      <div class="field"><label>شماره گیرنده</label><input type="tel" id="editReceiverPhone" style="direction:ltr"></div>
+    </div>
+    <div class="form-row single">
+      <div class="field"><label>آدرس تحویل *</label><input type="text" id="editAddress"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>تاریخ تحویل *</label>
+        <div class="date-picker-wrap">
+          <div class="date-display" id="editDeliveryDateDisplay" onclick="toggleCal('editDelivery')" tabindex="0">انتخاب تاریخ</div>
+          <input type="hidden" id="editDeliveryDate">
+          <div class="cal-popup" id="cal-editDelivery"></div>
+        </div>
+      </div>
+      <div class="field"><label>بازه تحویل</label><input type="text" id="editTimeSlot"></div>
+    </div>
+    <div class="private-box">
+      <div class="private-label">بازه زمانی داخلی</div>
+      <div class="field">
+        <select id="editInternalSlot">
+          <option value="">— انتخاب کنید —</option>
+          <option value="11-16">۱۱ تا ۱۶</option>
+          <option value="16-21">۱۶ تا ۲۱</option>
+        </select>
+      </div>
+    </div>
+    <div class="private-box">
+      <div class="private-label">اطلاعات مالی</div>
+      <div class="form-row">
+        <div class="field"><label>دریافتی از مشتری</label><input type="number" id="editSalePrice" oninput="calcEditDiff()"></div>
+        <div class="field"><label>پرداختی به راننده</label><input type="number" id="editDriverPrice" oninput="calcEditDiff()"></div>
+      </div>
+      <div class="diff-row">
+        <span style="font-size:0.78rem;color:var(--gold)">سود:</span>
+        <span class="diff-val" id="editDiffVal">—</span>
+      </div>
+    </div>
+    <div class="form-row single">
+      <div class="field"><label>توضیحات</label><textarea id="editNotes"></textarea></div>
+    </div>
+    <div class="form-row single">
+      <div class="field">
+        <label>افزودن عکس جدید (اختیاری)</label>
+        <div class="img-upload-area" onclick="document.getElementById('editImgInput').click()">
+          <div style="font-size:1.4rem">📷</div>
+          <p>برای آپلود عکس کلیک کنید</p>
+          <input type="file" id="editImgInput" accept="image/*" multiple style="display:none" onchange="previewEditImgs(this)">
+        </div>
+        <div class="img-thumbs" id="editImgThumbs"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveEdit()">ذخیره تغییرات</button>
+  </div>
+</div>
+
+<script>
+// ===================== SUPABASE CLIENT =====================
+var SUPABASE_URL = 'https://ktjmgrjifcourookatxl.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_8NnQnQrUsZswnuLlqg0_ZA_k4AHo-KI';
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var CREATE_USER_FN_URL = 'https://ktjmgrjifcourookatxl.supabase.co/functions/v1/clever-responder';
+
+async function callUserAdminFn(payload){
+  var sres = await sb.auth.getSession();
+  var token = sres.data && sres.data.session ? sres.data.session.access_token : null;
+  if(!token){ toast('ابتدا وارد شوید', true); return null; }
+  var res;
+  try{
+    res = await fetch(CREATE_USER_FN_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'apikey': SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+  }catch(e){
+    toast('خطا در ارتباط با سرور', true);
+    return null;
+  }
+  var data = {};
+  try{ data = await res.json(); }catch(e){}
+  if(!res.ok){
+    toast('خطا: ' + (data.error||'ساخت کاربر ناموفق بود'), true);
+    return null;
+  }
+  return data;
+}
+
+// ===================== STATE =====================
+var newImgFiles = []; // File objects for new order (for Storage upload)
+var newImgData = [];  // preview base64 (فقط برای نمایش)
+var editImgData = [];
+var editImgFiles = [];
+
+var STORAGE_BUCKET = 'order-images';
+
+// آپلود یه فایل به Supabase Storage و برگشت URL
+async function uploadImageToStorage(file, folder){
+  var filename = folder + '/' + Date.now() + '_' + Math.random().toString(36).substr(2,6) + '.jpg';
+  var res = await sb.storage.from(STORAGE_BUCKET).upload(filename, file, { contentType: 'image/jpeg', upsert: true });
+  if(res.error){ toast('خطا در آپلود عکس: '+res.error.message, true); return null; }
+  var urlRes = sb.storage.from(STORAGE_BUCKET).getPublicUrl(filename);
+  return urlRes.data.publicUrl;
+}
+
+// فشرده‌سازی و برگشت File object
+function compressToFile(file, maxW, quality){
+  return new Promise(function(resolve){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var w=img.width, h=img.height;
+        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+        var canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        canvas.toBlob(function(blob){
+          resolve(new File([blob], file.name||'img.jpg', {type:'image/jpeg'}));
+        }, 'image/jpeg', quality);
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// برای preview سریع base64
+function fileToBase64Preview(file){
+  return new Promise(function(resolve){
+    var reader=new FileReader();
+    reader.onload=function(e){resolve(e.target.result);};
+    reader.readAsDataURL(file);
+  });
+}
+
+// آرایه URL های storage برای یه سفارش — نمایش عکس‌های قدیمی base64 هم کار می‌کنه
+function imgSrc(s){ return s; }
+
+var CACHE = { orders: [], profiles: [], notifications: [] };
+var currentUser = null;
+
+function numOrNull(id){
+  var v = document.getElementById(id).value;
+  return v===''||v==null ? null : Number(v);
+}
+
+// ===================== FETCH HELPERS (CACHE) =====================
+// فیلدهای سبک بدون images/delivery_images برای لود اولیه
+var ORDERS_FIELDS = 'id,order_id,order_type,is_urgent,supply_source,product,barcode,seller,sender,sender_phone,receiver,receiver_phone,address,delivery_date,time_slot,internal_slot,sale_price,driver_price,notes,driver_id,driver_name,delivered,delivered_at,created_at_fa,created_by,created_at';
+
+async function fetchOrders(){
+  // فقط ۱۵۰ سفارش آخر، بدون فیلدهای عکس
+  var res = await sb.from('orders').select(ORDERS_FIELDS).order('updated_at', {ascending:false}).limit(150);
+  if(res.error){ toast('خطا در بارگذاری سفارشات: '+res.error.message, true); return; }
+  CACHE.orders = (res.data || []);
+}
+
+// عکس‌های یک سفارش رو موقع نیاز بکش
+async function fetchOrderImages(orderId){
+  var res = await sb.from('orders').select('images,delivery_images').eq('id', orderId).single();
+  if(res.error) return {images:[], delivery_images:[]};
+  return res.data;
+}
+
+async function fetchProfiles(){
+  var res = await sb.from('profiles').select('*');
+  if(res.error){ toast('خطا در بارگذاری کاربران: '+res.error.message, true); return; }
+  CACHE.profiles = res.data || [];
+}
+async function fetchNotifications(){
+  var res = await sb.from('notifications').select('*').order('id', {ascending:false}).limit(100);
+  if(res.error){ return; }
+  CACHE.notifications = res.data || [];
+}
+var notifPage = 0;
+
+// ===================== AUTH / SESSION =====================
+async function loadUserSession(user){
+  var res = await sb.from('profiles').select('*').eq('id', user.id).single();
+  if(res.error || !res.data){
+    toast('پروفایل این کاربر پیدا نشد', true);
+    await sb.auth.signOut();
+    return;
+  }
+  var profile = res.data;
+  currentUser = { id:user.id, username:(user.email||'').split('@')[0], name:profile.name, role:profile.role };
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('loginError').style.display='none';
+  if(currentUser.role==='admin'){
+    document.getElementById('app').style.display='block';
+    document.getElementById('driverApp').style.display='none';
+    document.getElementById('currentUserLabel').textContent=currentUser.name||currentUser.username;
+    // موازی fetch برای سرعت بیشتر
+    await Promise.all([fetchOrders(), fetchProfiles(), fetchNotifications()]);
+    updateHeaderCount(); updateNotifBadge();
+    requestNotifPermission();
+    startReminderTimer();
+  } else {
+    document.getElementById('driverApp').style.display='block';
+    document.getElementById('app').style.display='none';
+    document.getElementById('driverNameLabel').textContent=currentUser.name||currentUser.username;
+    await fetchOrders();
+    renderDriverOrders();
+  }
+}
+
+(async function init(){
+  try{
+    var sres = await sb.auth.getSession();
+    if(sres.data && sres.data.session && sres.data.session.user){
+      await loadUserSession(sres.data.session.user);
+    }
+  }catch(e){ /* stay on login screen */ }
+})();
+
+async function doLogin(){
+  var u=document.getElementById('loginUser').value.trim();
+  var p=document.getElementById('loginPass').value.trim();
+  var errEl=document.getElementById('loginError');
+  if(!u||!p){ errEl.textContent='نام کاربری و رمز را وارد کنید'; errEl.style.display='block'; return; }
+  var btn=document.getElementById('loginBtn');
+  btn.disabled=true; btn.textContent='در حال ورود...';
+  var email = u + '@woshe.app';
+  var res = await sb.auth.signInWithPassword({ email:email, password:p });
+  btn.disabled=false; btn.textContent='ورود';
+  if(res.error){
+    errEl.textContent='نام کاربری یا رمز اشتباه است';
+    errEl.style.display='block';
+    return;
+  }
+  errEl.style.display='none';
+  await loadUserSession(res.data.user);
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser=null;
+  CACHE = { orders: [], profiles: [], notifications: [] };
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('driverApp').style.display='none';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+}
+
+// ===================== REFRESH =====================
+async function refreshApp(){
+  if(currentUser && currentUser.role==='admin'){
+    var activeTab=document.querySelector('.tab.active');
+    var tabName=activeTab?(activeTab.getAttribute('onclick')||'').match(/showTab\('(\w+)'/):null;
+    await fetchOrders(); await fetchProfiles(); await fetchNotifications();
+    updateHeaderCount(); updateNotifBadge();
+    if(tabName){
+      if(tabName[1]==='list') renderList();
+      if(tabName[1]==='assign') renderAssignList();
+      if(tabName[1]==='settings'){renderDriversList();renderUsersList();}
+      if(tabName[1]==='report') renderReportStats();
+    }
+  } else if(currentUser && currentUser.role==='driver'){
+    await fetchOrders();
+    renderDriverOrders();
+  }
+  toast('بارگذاری شد');
+}
+
+// ===================== TABS (ADMIN) =====================
+async function showTab(name,el){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='assign'){ await fetchOrders(); await fetchProfiles(); renderAssignList(); }
+  if(name==='list'){ await fetchOrders(); await fetchProfiles(); renderList(); }
+  if(name==='settings'){ await fetchProfiles(); renderDriversList(); renderUsersList(); }
+  if(name==='report'){ await fetchOrders(); renderReportStats(); }
+  updateHeaderCount();
+}
+
+// ===================== DRIVER TABS =====================
+function showDriverTab(name,el){
+  document.querySelectorAll('.driver-page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.driver-tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('dtab-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ===================== TOAST =====================
+function toast(msg,err){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(err?' error':'');
+  setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+// ===================== JALALI CAL =====================
+var calState={};
+var jalaliMonths=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+var jalaliDays=['ش','ی','د','س','چ','پ','ج'];
+
+function toJalali(gy,gm,gd){
+  var g_d_no,j_d_no,j_np,i,j_y,j_m,j_d;
+  var g_days_in_month=[31,28,31,30,31,30,31,31,30,31,30,31];
+  var j_days_in_month=[31,31,31,31,31,31,30,30,30,30,30,29];
+  gy-=1600; gm--; gd--;
+  g_d_no=365*gy+Math.floor((gy+3)/4)-Math.floor((gy+99)/100)+Math.floor((gy+399)/400);
+  for(i=0;i<gm;i++) g_d_no+=g_days_in_month[i];
+  if(gm>1&&((gy%4===0&&gy%100!==0)||(gy+1600)%400===0)) g_d_no++;
+  g_d_no+=gd;
+  j_d_no=g_d_no-79;
+  j_np=Math.floor(j_d_no/12053); j_d_no%=12053;
+  j_y=979+33*j_np+4*Math.floor(j_d_no/1461); j_d_no%=1461;
+  if(j_d_no>=366){j_y+=Math.floor((j_d_no-1)/365); j_d_no=(j_d_no-1)%365;}
+  for(i=0;i<11&&j_d_no>=j_days_in_month[i];i++) j_d_no-=j_days_in_month[i];
+  j_m=i+1; j_d=j_d_no+1;
+  return [j_y,j_m,j_d];
+}
+
+function toGregorian(jy,jm,jd){
+  var sal_a,gy,gm,gd,g_d_no,j_d_no,i;
+  var g_days_in_month=[31,28,31,30,31,30,31,31,30,31,30,31];
+  var j_days_in_month=[31,31,31,31,31,31,30,30,30,30,30,29];
+  jy-=979; jm--; jd--;
+  j_d_no=365*jy+Math.floor(jy/33)*8+Math.floor((jy%33+3)/4);
+  for(i=0;i<jm;i++) j_d_no+=j_days_in_month[i];
+  j_d_no+=jd;
+  g_d_no=j_d_no+79;
+  gy=1600+400*Math.floor(g_d_no/146097); g_d_no=g_d_no%146097;
+  var leap=true;
+  if(g_d_no>=36525){g_d_no--;gy+=100*Math.floor(g_d_no/36524);g_d_no=g_d_no%36524;if(g_d_no>=365) g_d_no++;else leap=false;}
+  gy+=4*Math.floor(g_d_no/1461); g_d_no%=1461;
+  if(g_d_no>=366){leap=false;g_d_no--;gy+=Math.floor(g_d_no/365);g_d_no=g_d_no%365;}
+  for(i=0;g_d_no>=(i===1&&leap?29:g_days_in_month[i]);i++) g_d_no-=(i===1&&leap?29:g_days_in_month[i]);
+  gm=i+1; gd=g_d_no+1;
+  return new Date(gy,gm-1,gd);
+}
+
+function isLeapJalali(jy){
+  return [1,5,9,13,17,22,26,30].indexOf(((jy-(jy>474?474:473))%2820+474+38)*682%2816)>=0;
+}
+function getToday(){ var n=new Date(); return toJalali(n.getFullYear(),n.getMonth()+1,n.getDate()); }
+function initCal(id){ var t=getToday(); calState[id]={year:t[0],month:t[1],view:'day'}; }
+
+function jalaliDayOfWeek(jy,jm,jd){
+  var g=toGregorian(jy,jm,jd);
+  var dow=g.getDay();
+  return (dow+1)%7;
+}
+
+function toggleCal(id){
+  var popup=document.getElementById('cal-'+id);
+  var isOpen=popup.classList.contains('open');
+  document.querySelectorAll('.cal-popup').forEach(function(p){p.classList.remove('open');});
+  document.querySelectorAll('.date-display').forEach(function(d){d.classList.remove('open');});
+  if(!isOpen){
+    if(!calState[id]) initCal(id);
+    renderCal(id);
+    popup.classList.add('open');
+    var dispId=id==='delivery'?'deliveryDateDisplay':id==='editDelivery'?'editDeliveryDateDisplay':id+'Display';
+    var disp=document.getElementById(dispId);
+    if(disp) disp.classList.add('open');
+  }
+}
+
+function renderCal(id){
+  var s=calState[id];
+  var popup=document.getElementById('cal-'+id);
+  var dim=[0,31,31,31,31,31,31,30,30,30,30,30,29];
+  if(isLeapJalali(s.year)) dim[12]=30;
+  var startOffset=jalaliDayOfWeek(s.year,s.month,1);
+  var today=getToday();
+  var html='<div class="cal-header">'
+    +'<button class="cal-nav" onclick="calPrev(\''+id+'\')">›</button>'
+    +'<span onclick="switchCalView(\''+id+'\')" style="cursor:pointer">'+jalaliMonths[s.month-1]+' '+s.year+'</span>'
+    +'<button class="cal-nav" onclick="calNext(\''+id+'\')">‹</button>'
+    +'</div>';
+  if(s.view==='month'){
+    html+='<div class="cal-month-sel">';
+    for(var m=1;m<=12;m++) html+='<button class="cal-month-btn'+(m===s.month?' active':'')+'" onclick="selectMonth(\''+id+'\','+m+')">'+jalaliMonths[m-1]+'</button>';
+    html+='</div>';
+  } else {
+    html+='<div class="cal-days-header">';
+    jalaliDays.forEach(function(d){html+='<span>'+d+'</span>';});
+    html+='</div><div class="cal-days">';
+    for(var i=0;i<startOffset;i++) html+='<div class="cal-day empty"></div>';
+    var hidId=id==='delivery'?'deliveryDate':id==='editDelivery'?'editDeliveryDate':id==='listDate'?'listDate':id;
+    var el=document.getElementById(hidId);
+    var selVal=el?el.value:'';
+    var sp=selVal?selVal.split('/'):[];
+    for(var d=1;d<=dim[s.month];d++){
+      var isSel=sp.length===3&&parseInt(sp[0])===s.year&&parseInt(sp[1])===s.month&&parseInt(sp[2])===d;
+      var isToday=today[0]===s.year&&today[1]===s.month&&today[2]===d;
+      var cls='cal-day'+(isSel?' selected':'')+(isToday&&!isSel?' today':isToday?' selected today':'');
+      html+='<div class="'+cls+'" onclick="selectDay(\''+id+'\','+d+')">'+d+'</div>';
+    }
+    html+='</div>';
+  }
+  popup.innerHTML=html;
+}
+
+function switchCalView(id){calState[id].view=calState[id].view==='day'?'month':'day';renderCal(id);}
+function selectMonth(id,m){calState[id].month=m;calState[id].view='day';renderCal(id);}
+function calPrev(id){var s=calState[id];if(s.view==='month'){s.year--;}else{s.month--;if(s.month<1){s.month=12;s.year--;}}renderCal(id);}
+function calNext(id){var s=calState[id];if(s.view==='month'){s.year++;}else{s.month++;if(s.month>12){s.month=1;s.year++;}}renderCal(id);}
+
+function selectDay(id,d){
+  var s=calState[id];
+  var m=s.month<10?'0'+s.month:''+s.month;
+  var dd=d<10?'0'+d:''+d;
+  var val=s.year+'/'+m+'/'+dd;
+  var hidId,dispId;
+  if(id==='delivery'){hidId='deliveryDate';dispId='deliveryDateDisplay';}
+  else if(id==='editDelivery'){hidId='editDeliveryDate';dispId='editDeliveryDateDisplay';}
+  else if(id==='listDate'){hidId='listDate';dispId='listDateDisplay';}
+  else{hidId=id;dispId=id+'Display';}
+  document.getElementById(hidId).value=val;
+  document.getElementById(dispId).textContent=val;
+  document.getElementById('cal-'+id).classList.remove('open');
+  document.getElementById(dispId).classList.remove('open');
+  if(id==='listDate') renderList();
+}
+
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.date-picker-wrap')){
+    document.querySelectorAll('.cal-popup').forEach(function(p){p.classList.remove('open');});
+    document.querySelectorAll('.date-display').forEach(function(d){d.classList.remove('open');});
+  }
+});
+
+// ===================== CALC DIFF =====================
+function calcDiff(){
+  var s=parseInt(document.getElementById('salePrice').value)||0;
+  var d=parseInt(document.getElementById('driverPrice').value)||0;
+  var diff=s-d;var el=document.getElementById('diffVal');
+  if(s||d){el.textContent=diff.toLocaleString('fa')+' تومان';el.style.color=diff>=0?'var(--green)':'var(--red)';}
+  else el.textContent='—';
+}
+
+// ===================== MULTI IMAGE UPLOAD =====================
+// newImgFiles = File[] فشرده‌شده برای آپلود
+// newImgData = string[] base64 فقط برای preview
+
+function previewImgs(input, thumbsId, dataArr){
+  var files=input.files;
+  if(!files.length) return;
+  Array.from(files).forEach(function(file){
+    compressToFile(file, 900, 0.70).then(function(compressed){
+      newImgFiles.push(compressed);
+      fileToBase64Preview(compressed).then(function(b64){
+        newImgData.push(b64);
+        renderThumbs(thumbsId, newImgData, dataArr);
+      });
+    });
+  });
+  input.value='';
+}
+
+function previewEditImgs(input){
+  Array.from(input.files).forEach(function(file){
+    compressToFile(file, 900, 0.70).then(function(compressed){
+      editImgFiles.push(compressed);
+      fileToBase64Preview(compressed).then(function(b64){
+        editImgData.push(b64);
+        renderEditThumbs();
+      });
+    });
+  });
+  input.value='';
+}
+
+function renderEditThumbs(){
+  var el = document.getElementById('editImgThumbs');
+  if(!el) return;
+  el.innerHTML = editImgData.map(function(s,i){
+    return '<div class="img-thumb-wrap"><img src="'+s+'" onclick="openLightbox(this.src)"><button class="img-thumb-del" onclick="removeEditImg('+i+')">✕</button></div>';
+  }).join('');
+}
+
+function removeEditImg(idx){
+  editImgFiles.splice(idx,1);
+  editImgData.splice(idx,1);
+  renderEditThumbs();
+}
+
+function renderThumbs(thumbsId, arr, dataArrName){
+  var el=document.getElementById(thumbsId);
+  el.innerHTML=arr.map(function(src,i){
+    return '<div class="img-thumb-wrap">'
+      +'<img src="'+src+'" onclick="openLightbox(\''+src+'\')">'
+      +'<button class="img-thumb-del" onclick="removeImg('+i+',\''+thumbsId+'\',\''+dataArrName+'\')">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+function removeImg(idx, thumbsId, dataArrName){
+  newImgFiles.splice(idx,1);
+  newImgData.splice(idx,1);
+  renderThumbs(thumbsId, newImgData, dataArrName);
+}
+
+// ===================== LIGHTBOX =====================
+function openLightbox(src){
+  document.getElementById('lightboxImg').src=src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+// ===================== SAMPLE FORM =====================
+function showSection(section){
+  document.getElementById('orderForm').style.display = section==='orderForm' ? 'block' : 'none';
+  document.getElementById('sampleForm').style.display = section==='sampleForm' ? 'block' : 'none';
+}
+
+function onSampleTypeChange(){
+  var t = document.getElementById('sampleType').value;
+  document.getElementById('sampleCommon').style.display = t ? 'block' : 'none';
+  document.getElementById('sampleTransferFields').style.display = t==='transfer' ? 'block' : 'none';
+  document.getElementById('sampleUnhappyFields').style.display = t==='unhappy' ? 'block' : 'none';
+  document.getElementById('samplePersonalFields').style.display = t==='personal' ? 'block' : 'none';
+  document.getElementById('sampleSampleFields').style.display = t==='sample' ? 'block' : 'none';
+  document.getElementById('sampleReturnFields').style.display = t==='return' ? 'block' : 'none';
+  // قیمت برای همه غیر از خالی
+  document.getElementById('samplePriceBox').style.display = t ? 'block' : 'none';
+  // بازه تحویل فقط برای غیر از کارهای شخصی
+  document.getElementById('sampleTimeSlotField').style.display = t==='personal' ? 'none' : 'block';
+}
+
+function calcSampleDiff(){
+  var s=parseInt(document.getElementById('sampleSalePrice').value)||0;
+  var d=parseInt(document.getElementById('sampleDriverPrice').value)||0;
+  var diff=s-d; var el=document.getElementById('sampleDiffVal');
+  if(s||d){el.textContent=diff.toLocaleString('fa')+' تومان';el.style.color=diff>=0?'var(--green)':'var(--red)';}
+  else el.textContent='—';
+}
+
+async function saveSample(){
+  var t = document.getElementById('sampleType').value;
+  if(!t){ toast('نوع سمپل را انتخاب کنید', true); return; }
+  var address = document.getElementById('sampleAddress').value.trim();
+  if(!address){ toast('آدرس را وارد کنید', true); return; }
+  var sampleId = 'S-'+Date.now();
+  var typeLabels = {unhappy:'مشتری ناراضی',transfer:'جابه‌جایی',personal:'کارهای شخصی',sample:'سمپل',return:'برگشتی از مغازه'};
+
+  var notes = document.getElementById('sampleNotes').value.trim();
+  var extra = '';
+  if(t==='transfer'){
+    var origin = document.getElementById('sampleOrigin').value.trim();
+    if(origin) extra += 'مبدا: '+origin+' | ';
+    var tSeller = document.getElementById('sampleTransferSeller').value;
+    if(tSeller) extra += 'فروشنده: '+tSeller+' | ';
+  }
+  if(t==='unhappy'){
+    var uSeller = document.getElementById('sampleUnhappySeller').value;
+    if(uSeller) extra += 'فروشنده: '+uSeller+' | ';
+  }
+  if(t==='personal'){
+    var pname = document.getElementById('samplePersonName').value;
+    if(pname) extra += 'نام: '+pname+' | ';
+  }
+  if(t==='sample'){
+    var store = document.getElementById('sampleStore').value;
+    if(store) extra += store+' | ';
+  }
+  if(t==='return'){
+    var rstore = document.getElementById('sampleReturnStore').value;
+    if(rstore) extra += rstore+' | ';
+  }
+
+  var btn = document.getElementById('saveSampleBtn');
+  btn.disabled=true; btn.textContent='در حال ذخیره...';
+
+  var saleP = parseInt(document.getElementById('sampleSalePrice').value)||null;
+  var drvP  = parseInt(document.getElementById('sampleDriverPrice').value)||null;
+
+  var orderData = {
+    order_id: sampleId,
+    order_type: typeLabels[t],
+    is_urgent: false,
+    supply_source: '',
+    product: typeLabels[t],
+    barcode: '',
+    seller: '',
+    sender: '',
+    sender_phone: '',
+    receiver: '',
+    receiver_phone: '',
+    address: address,
+    delivery_date: document.getElementById('sampleDate').value || '',
+    time_slot: document.getElementById('sampleTimeSlot').value.trim(),
+    internal_slot: '',
+    sale_price: saleP,
+    driver_price: drvP,
+    notes: (extra+notes).replace(/ \| $/,''),
+    images: [],
+    delivery_images: [],
+    driver_id: null,
+    driver_name: '',
+    delivered: false,
+    delivered_at: '',
+    created_at_fa: new Date().toLocaleDateString('fa-IR'),
+    created_by: currentUser ? currentUser.username : ''
+  };
+
+  var res = await sb.from('orders').insert(orderData);
+  btn.disabled=false; btn.textContent='ذخیره سمپل';
+  if(res.error){ toast('خطا: '+res.error.message, true); return; }
+  // پاک کردن فرم
+  ['sampleAddress','sampleTimeSlot','sampleNotes','sampleOrigin','sampleSalePrice','sampleDriverPrice'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('sampleType').value='';
+  document.getElementById('sampleDate').value='';
+  document.getElementById('sampleDateDisplay').textContent='انتخاب تاریخ';
+  onSampleTypeChange();
+  await fetchOrders(); updateHeaderCount();
+  toast('سمپل ذخیره شد');
+}
+
+// ===================== SAVE ORDER =====================
+async function saveOrder(){
+  var orderId=document.getElementById('orderId').value.trim();
+  var product=document.getElementById('product').value.trim();
+  var receiver=document.getElementById('receiver').value.trim();
+  var address=document.getElementById('address').value.trim();
+  var deliveryDate=document.getElementById('deliveryDate').value.trim();
+  if(!orderId||!product||!receiver||!address||!deliveryDate){toast('فیلدهای ستاره‌دار را پر کنید',true);return;}
+  var btn=document.getElementById('saveOrderBtn');
+  btn.disabled=true; btn.textContent='در حال آپلود عکس‌ها...';
+
+  // آپلود عکس‌ها به Storage
+  var imageUrls = [];
+  for(var i=0; i<newImgFiles.length; i++){
+    var url = await uploadImageToStorage(newImgFiles[i], 'orders/'+orderId);
+    if(url) imageUrls.push(url);
+  }
+
+  btn.textContent='در حال ذخیره...';
+  var orderData={
+    order_id:orderId,
+    order_type:document.getElementById('orderType').value,
+    is_urgent:document.getElementById('isUrgent').checked,
+    supply_source:document.getElementById('supplySource').value,
+    product:product,
+    barcode:document.getElementById('barcode').value.trim(),
+    seller:document.getElementById('seller').value,
+    sender:document.getElementById('sender').value.trim(),
+    sender_phone:document.getElementById('senderPhone').value.trim(),
+    receiver:receiver,
+    receiver_phone:document.getElementById('receiverPhone').value.trim(),
+    address:address,
+    delivery_date:deliveryDate,
+    time_slot:document.getElementById('timeSlot').value.trim(),
+    internal_slot:document.getElementById('internalSlot').value,
+    sale_price:numOrNull('salePrice'),
+    driver_price:numOrNull('driverPrice'),
+    notes:document.getElementById('notes').value.trim(),
+    images:imageUrls,
+    delivery_images:[],
+    driver_id:null,
+    driver_name:'',
+    delivered:false,
+    delivered_at:'',
+    created_at_fa:new Date().toLocaleDateString('fa-IR'),
+    created_by:currentUser?currentUser.username:''
+  };
+  var res = await sb.from('orders').insert(orderData);
+  btn.disabled=false; btn.textContent='ذخیره سفارش';
+  if(res.error){ toast('خطا در ذخیره سفارش: '+res.error.message, true); return; }
+  clearOrderForm();
+  await fetchOrders();
+  updateHeaderCount();
+  toast('سفارش ذخیره شد');
+}
+
+function clearOrderForm(){
+  ['orderId','product','barcode','sender','senderPhone','receiver','receiverPhone','address','timeSlot','notes','salePrice','driverPrice']
+    .forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('seller').value='';
+  document.getElementById('supplySource').value='';
+  document.getElementById('isUrgent').checked=false;
+  document.getElementById('internalSlot').value='';
+  document.getElementById('deliveryDate').value='';
+  document.getElementById('deliveryDateDisplay').textContent='انتخاب تاریخ';
+  newImgFiles.length=0;
+  newImgData.length=0;
+  document.getElementById('imgThumbs').innerHTML='';
+  document.getElementById('diffVal').textContent='—';
+}
+
+// ===================== ASSIGN PAGE =====================
+function driverOptions(selectedId){
+  var drivers=CACHE.profiles.filter(function(p){return p.role==='driver';});
+  return '<option value="">انتخاب راننده...</option>'
+    +'<option value="__agency__"'+(selectedId==='__agency__'?' selected':'')+'>آژانس</option>'
+    +drivers.map(function(d){
+      return '<option value="'+d.id+'"'+(d.id===selectedId?' selected':'')+'>'+d.name+'</option>';
+    }).join('');
+}
+
+function renderAssignList(){
+  var f=document.getElementById('assignFilterStatus').value;
+  var q=(document.getElementById('assignSearchQ')?document.getElementById('assignSearchQ').value:'').trim().toLowerCase();
+  var limit=parseInt(document.getElementById('assignLimit').value)||30;
+  var orders=CACHE.orders.filter(function(o){
+    if(f==='unassigned') return !o.driver_id;
+    if(f==='assigned') return !!o.driver_id;
+    return true;
+  }).filter(function(o){
+    if(!q) return true;
+    var hay=(o.order_id+o.product+o.receiver+(o.sender||'')+(o.address||'')+(o.notes||'')+(o.driver_name||'')).toLowerCase();
+    return hay.indexOf(q)>=0;
+  });
+  var total=orders.length;
+  orders=[...orders].slice(0,limit);
+  var el=document.getElementById('assignList');
+  if(!orders.length){el.innerHTML='<p style="color:var(--gray);text-align:center;padding:20px">سفارشی یافت نشد</p>';return;}
+  var countNote=total>limit?'<div style="font-size:0.8rem;color:var(--gray);margin-bottom:8px;text-align:center">نمایش '+limit+' از '+total+' سفارش</div>':'';
+  el.innerHTML=countNote+'<div>'+orders.map(function(o){
+    var slotTxt=o.internal_slot?(o.internal_slot==='11-16'?'۱۱–۱۶':'۱۶–۲۱'):'';
+    var isUrgent=o.is_urgent||false;
+    var showUrgentBorder=isUrgent&&!o.driver_id&&!o.delivered;
+    var badge=o.delivered?'<span class="badge badge-delivered">تحویل شده</span>'
+      :o.driver_id?'<span class="badge badge-blue">'+o.driver_name+'</span>'
+      :'<span class="badge badge-yellow">بدون راننده</span>';
+    var urgentBadge=isUrgent?'<span class="badge badge-urgent">فوری</span> ':'';
+    var cardClass='order-card'+(o.delivered?' delivered':'')+(showUrgentBorder?' urgent':'');
+    return '<div class="'+cardClass+'">'
+      +'<div class="order-card-right">'
+      +'<div class="order-card-num">'+urgentBadge+'#'+o.order_id+' '+badge+'</div>'
+      +'<div class="order-card-meta">'
+      +'نوع: <b>'+o.order_type+'</b>'+(o.barcode?' | بارکد: '+o.barcode:'')+'<br>'
+      +(o.supply_source?'منبع تامین: <b>'+o.supply_source+'</b><br>':'')
+      +(o.sender?'فرستنده: <b>'+o.sender+'</b>'+(o.sender_phone?' — '+o.sender_phone:'')+'<br>':'')
+      +'گیرنده: <b>'+o.receiver+'</b>'+(o.receiver_phone?' — '+o.receiver_phone:'')+'<br>'
+      +'آدرس: <span style="color:#0d47a1;font-weight:700">'+o.address+'</span><br>'
+      +'تاریخ تحویل: <b>'+o.delivery_date+'</b><br>'
+      +(o.time_slot?'بازه تحویل: <span style="color:#1565c0;font-weight:700">'+o.time_slot+'</span><br>':'')
+      +(slotTxt?'بازه داخلی: <span style="color:var(--gold)">'+slotTxt+'</span><br>':'')
+      +(o.notes?'توضیحات: '+o.notes:'')
+      +'</div>'
+      +'<div id="aimgs-'+o.id+'"><button class="btn btn-secondary btn-sm" style="margin-top:6px;font-size:0.78rem" onclick="loadAssignImgs('+o.id+',this)">نمایش عکس‌ها</button></div>'
+      +'</div>'
+      +'<div class="order-card-left">'
+      +'<div style="font-size:0.72rem;color:var(--gray)">'+(o.created_at_fa||'')+'</div>'
+      +'<select id="adrv-'+o.id+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:Vazirmatn,sans-serif;font-size:0.82rem;">'
+      +driverOptions(o.driver_id)
+      +'</select>'
+      +'<button class="btn btn-primary" style="width:100%;margin-top:0;padding:6px 10px;font-size:0.82rem" onclick="assignDriver('+o.id+')">تخصیص</button>'
+      +(o.driver_id?'<button class="btn btn-secondary btn-sm" style="width:100%" onclick="unassignDriver('+o.id+')">لغو</button>':'')
+      +'</div>'
+      +'</div>';
+  }).join('')+'</div>';
+}
+
+async function assignDriver(oid){
+  var sel=document.getElementById('adrv-'+oid);
+  var driverId=sel.value;
+  if(!driverId){toast('راننده را انتخاب کنید',true);return;}
+  var isAgency = driverId==='__agency__';
+  var driverName = isAgency ? 'آژانس' : '';
+  if(!isAgency){
+    var driver=CACHE.profiles.find(function(d){return d.id===driverId;});
+    if(!driver) return;
+    driverName = driver.name;
+  }
+  var updateData = {driver_id: isAgency ? null : driverId, driver_name: driverName};
+  if(isAgency){
+    var now = new Date();
+    updateData.delivered = true;
+    updateData.delivered_at = now.toLocaleDateString('fa-IR')+' '+now.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+  }
+  var res = await sb.from('orders').update(updateData).eq('id', oid);
+  if(res.error){ toast('خطا در تخصیص: '+res.error.message, true); return; }
+  toast(isAgency ? 'سفارش به آژانس تخصیص یافت و تحویل‌شده ثبت شد' : 'سفارش به '+driverName+' تخصیص یافت');
+  await fetchOrders();
+  renderAssignList(); updateHeaderCount();
+}
+
+async function unassignDriver(oid){
+  var res = await sb.from('orders').update({driver_id:null, driver_name:''}).eq('id', oid);
+  if(res.error){ toast('خطا در لغو تخصیص: '+res.error.message, true); return; }
+  await fetchOrders();
+  renderAssignList(); updateHeaderCount();
+}
+
+async function assignDriverFromList(oid){
+  var sel=document.getElementById('ldrv-'+oid);
+  if(!sel){toast('خطا در یافتن فیلد راننده',true);return;}
+  var driverId=sel.value;
+  if(!driverId){toast('راننده را انتخاب کنید',true);return;}
+  var isAgency = driverId==='__agency__';
+  var driverName = isAgency ? 'آژانس' : '';
+  if(!isAgency){
+    var driver=CACHE.profiles.find(function(d){return d.id===driverId;});
+    if(!driver) return;
+    driverName = driver.name;
+  }
+  var updateData = {driver_id: isAgency ? null : driverId, driver_name: driverName};
+  if(isAgency){
+    var now = new Date();
+    updateData.delivered = true;
+    updateData.delivered_at = now.toLocaleDateString('fa-IR')+' '+now.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+  }
+  var res = await sb.from('orders').update(updateData).eq('id', oid);
+  if(res.error){ toast('خطا در تخصیص: '+res.error.message, true); return; }
+  toast(isAgency ? 'سفارش به آژانس تخصیص یافت و تحویل‌شده ثبت شد' : 'سفارش به '+driverName+' تخصیص یافت');
+  await fetchOrders();
+  renderList(); updateHeaderCount();
+}
+
+async function unassignDriverFromList(oid){
+  var res = await sb.from('orders').update({driver_id:null, driver_name:''}).eq('id', oid);
+  if(res.error){ toast('خطا در لغو تخصیص: '+res.error.message, true); return; }
+  await fetchOrders();
+  renderList();
+}
+
+// ===================== NOTIFICATIONS =====================
+async function addNotif(msg){
+  var time=new Date().toLocaleString('fa-IR',{hour:'2-digit',minute:'2-digit',year:'numeric',month:'2-digit',day:'2-digit'});
+  await sb.from('notifications').insert({msg:msg, time:time, read:false});
+  await fetchNotifications();
+  updateNotifBadge();
+}
+
+function updateNotifBadge(){
+  var notifs=CACHE.notifications;
+  var unread=notifs.filter(function(n){return !n.read;}).length;
+  var badge=document.getElementById('notifBadge');
+  if(!badge) return;
+  if(unread>0){badge.style.display='flex';badge.textContent=unread>9?'9+':unread;}
+  else badge.style.display='none';
+}
+
+async function toggleNotifPanel(){
+  var panel=document.getElementById('notifPanel');
+  if(!panel) return;
+  var isOpen=panel.classList.contains('open');
+  panel.classList.toggle('open');
+  if(!isOpen){
+    notifPage=0;
+    await fetchNotifications();
+    var unreadIds=CACHE.notifications.filter(function(n){return !n.read;}).map(function(n){return n.id;});
+    if(unreadIds.length){
+      await sb.from('notifications').update({read:true}).in('id', unreadIds);
+      await fetchNotifications();
+    }
+    updateNotifBadge();
+    renderNotifList();
+  }
+}
+
+function renderNotifList(){
+  var notifs=CACHE.notifications;
+  var el=document.getElementById('notifList');
+  if(!el) return;
+  if(!notifs.length){el.innerHTML='<div class="notif-empty">اعلانی وجود ندارد</div>';return;}
+  var perPage=10;
+  var totalPages=Math.ceil(notifs.length/perPage);
+  var page=notifPage;
+  var slice=notifs.slice(page*perPage, page*perPage+perPage);
+  var html=slice.map(function(n){
+    return '<div class="notif-item'+(n.read?'':' unread')+'">'
+      +'&#128276; '+n.msg
+      +'<div class="notif-time">'+n.time+'</div>'
+      +'</div>';
+  }).join('');
+  if(totalPages>1){
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-top:1px solid var(--gp);font-size:0.78rem;color:var(--gray)">'
+      +'<button onclick="notifPageNav(-1)" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--green);font-family:Vazirmatn,sans-serif"'+(page===0?' disabled':'')+'> قبلی </button>'
+      +'صفحه '+(page+1)+' از '+totalPages
+      +'<button onclick="notifPageNav(1)" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--green);font-family:Vazirmatn,sans-serif"'+(page>=totalPages-1?' disabled':'')+'> بعدی </button>'
+      +'</div>';
+  }
+  el.innerHTML=html;
+}
+
+function notifPageNav(dir){
+  var perPage=10;
+  var totalPages=Math.ceil(CACHE.notifications.length/perPage);
+  notifPage=Math.max(0,Math.min(totalPages-1,notifPage+dir));
+  renderNotifList();
+}
+
+async function clearNotifs(){
+  await sb.from('notifications').delete().gte('id',0);
+  await fetchNotifications();
+  updateNotifBadge();
+  renderNotifList();
+}
+
+document.addEventListener('click',function(e){
+  var panel=document.getElementById('notifPanel');
+  var bell=document.getElementById('notifBell');
+  if(panel&&panel.classList.contains('open')&&!panel.contains(e.target)&&e.target!==bell&&!bell.contains(e.target)){
+    panel.classList.remove('open');
+  }
+});
+
+// ===================== LIST (ADMIN) =====================
+function clearListDate(){
+  document.getElementById('listDate').value='';
+  document.getElementById('listDateDisplay').textContent='همه تاریخ‌ها';
+  renderList();
+}
+
+function renderList(){
+  var q=(document.getElementById('searchQ').value||'').trim().toLowerCase();
+  var sf=document.getElementById('listStatus').value;
+  var df=document.getElementById('listDate').value;
+  var slotF=document.getElementById('listSlotFilter').value;
+  var limit=parseInt(document.getElementById('listLimit').value)||30;
+  var orders=CACHE.orders.filter(function(o){
+    if(sf==='unassigned'&&o.driver_id) return false;
+    if(sf==='assigned'&&(!o.driver_id||o.delivered)) return false;
+    if(sf==='delivered'&&!o.delivered) return false;
+    if(df&&o.delivery_date!==df) return false;
+    if(slotF&&o.internal_slot!==slotF) return false;
+    if(q){
+      var hay=(o.order_id+o.product+o.receiver+(o.sender||'')+(o.address||'')+(o.notes||'')+(o.driver_name||'')).toLowerCase();
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+  var total=orders.length;
+  orders=[...orders].slice(0,limit);
+  var el=document.getElementById('ordersList');
+  if(!orders.length){el.innerHTML='<p style="color:var(--gray);text-align:center;padding:20px">سفارشی یافت نشد</p>';return;}
+  var countNote=total>limit?'<div style="font-size:0.8rem;color:var(--gray);margin-bottom:8px;text-align:center">نمایش '+limit+' از '+total+' سفارش</div>':'';
+  el.innerHTML=countNote+'<div>'+orders.map(function(o){
+    var sale=Number(o.sale_price||0);var drv=Number(o.driver_price||0);
+    var slotTxt=o.internal_slot?(o.internal_slot==='11-16'?'۱۱–۱۶':'۱۶–۲۱'):'';
+    var isUrgent=o.is_urgent||false;
+    var showUrgentBorder=isUrgent&&!o.driver_id&&!o.delivered;
+    var badge=o.delivered?'<span class="badge badge-delivered">تحویل شده</span>'
+      :o.driver_id?'<span class="badge badge-blue">'+o.driver_name+'</span>'
+      :'<span class="badge badge-yellow">بدون راننده</span>';
+    var urgentBadge=isUrgent?'<span class="badge badge-urgent">فوری</span> ':'';
+    var cardClass='order-card'+(o.delivered?' delivered':'')+(showUrgentBorder?' urgent':'');
+    return '<div class="'+cardClass+'">'
+      +'<div class="order-card-right">'
+      +'<div class="order-card-num">'+urgentBadge+'#'+o.order_id+' '+badge+'</div>'
+      +'<div class="order-card-meta">'
+      +'نوع: <b>'+o.order_type+'</b>'+(o.barcode?' | بارکد: '+o.barcode:'')+'<br>'
+      +'محصول: <b>'+o.product+'</b><br>'
+      +(o.supply_source?'منبع تامین: <b>'+o.supply_source+'</b><br>':'')
+      +(o.seller?'فروشنده: <b>'+o.seller+'</b><br>':'')
+      +(o.sender?'فرستنده: <b>'+o.sender+'</b>'+(o.sender_phone?' — '+o.sender_phone:'')+'<br>':'')
+      +'گیرنده: <b>'+o.receiver+'</b>'+(o.receiver_phone?' — '+o.receiver_phone:'')+'<br>'
+      +'آدرس: <span style="color:#0d47a1;font-weight:600">'+o.address+'</span><br>'
+      +'تاریخ تحویل: <b>'+o.delivery_date+'</b><br>'
+      +(o.time_slot?'بازه تحویل: <span style="color:#1565c0;font-weight:700">'+o.time_slot+'</span><br>':'')
+      +(slotTxt?'بازه داخلی: <span style="color:var(--gold)">'+slotTxt+'</span><br>':'')
+      +(o.notes?'توضیحات: '+o.notes+'<br>':'')
+      +(o.delivered_at?'<span style="color:#2e7d32;font-size:0.78rem">تحویل: '+o.delivered_at+'</span><br>':'')
+      +'دریافتی: '+sale.toLocaleString('fa')+' | راننده: '+drv.toLocaleString('fa')+' | سود: <b>'+(sale-drv).toLocaleString('fa')+'</b> ت'
+      +'</div>'
+      +'<div id="imgs-'+o.id+'"><button class="btn btn-secondary btn-sm" style="margin-top:6px;font-size:0.78rem" onclick="loadOrderImgs('+o.id+',this)">نمایش عکس‌ها</button></div>'
+      +'<div class="order-card-actions">'
+      +'<button class="btn btn-secondary btn-sm" onclick="openEditModal('+o.id+')">ویرایش</button>'
+      +'<button class="btn btn-danger btn-sm" onclick="deleteOrder('+o.id+')">حذف</button>'
+      +(o.delivered?'<button class="btn btn-secondary btn-sm" onclick="undeliverOrder('+o.id+')">لغو تحویل</button>':'')
+      +'</div>'
+      +'</div>'
+      +'<div class="order-card-left">'
+      +'<div style="font-size:0.72rem;color:var(--gray)">'+(o.created_at_fa||'')+(o.created_by?'<br>'+o.created_by:'')+'</div>'
+      +'<select id="ldrv-'+o.id+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:Vazirmatn,sans-serif;font-size:0.82rem;">'
+      +driverOptions(o.driver_id)
+      +'</select>'
+      +'<button class="btn btn-primary" style="width:100%;margin-top:0;padding:6px 10px;font-size:0.82rem" onclick="assignDriverFromList('+o.id+')">تخصیص</button>'
+      +(o.driver_id?'<button class="btn btn-secondary btn-sm" style="width:100%" onclick="unassignDriverFromList('+o.id+')">لغو</button>':'')
+      +'</div>'
+      +'</div>';
+  }).join('')+'</div>';
+}
+
+async function loadAssignImgs(oid, btn){
+  if(btn) btn.textContent='در حال بارگذاری...';
+  var data = await fetchOrderImages(oid);
+  var el = document.getElementById('aimgs-'+oid);
+  if(!el) return;
+  var html = '';
+  if(data.images && data.images.length){
+    html += '<div class="img-thumbs" style="margin-top:8px">'+data.images.map(function(s){
+      return '<img src="'+s+'" style="width:55px;height:55px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="openLightbox(\''+s+'\')" loading="lazy">';
+    }).join('')+'</div>';
+  }
+  el.innerHTML = html || '<span style="font-size:0.78rem;color:var(--gray)">عکسی ندارد</span>';
+}
+
+async function loadOrderImgs(oid, btn){
+  if(btn) btn.textContent='در حال بارگذاری...';
+  var data = await fetchOrderImages(oid);
+  var el = document.getElementById('imgs-'+oid);
+  if(!el) return;
+  var html = '';
+  if(data.images && data.images.length){
+    html += '<div class="img-thumbs" style="margin-top:8px">'+data.images.map(function(s){
+      return '<img src="'+s+'" style="width:55px;height:55px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="openLightbox(\''+s+'\')" loading="lazy">';
+    }).join('')+'</div>';
+  }
+  if(data.delivery_images && data.delivery_images.length){
+    html += '<div style="margin-top:6px;font-size:0.79rem;color:#558b2f;font-weight:600">عکس تحویل راننده:</div>'
+      +'<div class="delivery-imgs">'+data.delivery_images.map(function(s){
+        return '<img src="'+s+'" onclick="openLightbox(\''+s+'\')" loading="lazy">';
+      }).join('')+'</div>';
+  }
+  el.innerHTML = html || '<span style="font-size:0.78rem;color:var(--gray)">عکسی ندارد</span>';
+}
+
+async function deleteOrder(id){
+  if(!confirm('حذف شود؟')) return;
+  var res = await sb.from('orders').delete().eq('id', id);
+  if(res.error){ toast('خطا در حذف: '+res.error.message, true); return; }
+  await fetchOrders();
+  renderList(); updateHeaderCount();
+}
+
+async function undeliverOrder(id){
+  var res = await sb.from('orders').update({delivered:false, delivered_at:'', delivery_images:[]}).eq('id', id);
+  if(res.error){ toast('خطا: '+res.error.message, true); return; }
+  await fetchOrders();
+  renderList();
+}
+
+// ===================== DRIVER ORDERS =====================
+async function renderDriverOrders(){
+  if(!currentUser||currentUser.role!=='driver') return;
+  var myOrders=CACHE.orders.filter(function(o){return o.driver_id===currentUser.id;});
+  var pending=myOrders.filter(function(o){return !o.delivered;});
+  var doneAll=myOrders.filter(function(o){return o.delivered;});
+
+  var pel=document.getElementById('driverPendingList');
+  if(!pending.length){
+    pel.innerHTML='<p style="color:var(--gray);text-align:center;padding:30px">سفارشی در انتظار تحویل ندارید</p>';
+  } else {
+    pel.innerHTML=pending.map(function(o){ return driverOrderCard(o,false); }).join('');
+  }
+
+  // فیلتر تاریخ برای تحویل شده
+  var df = document.getElementById('driverDoneDate') ? document.getElementById('driverDoneDate').value : '';
+  var done = df ? doneAll.filter(function(o){ return o.delivery_date===df; }) : doneAll;
+
+  var del=document.getElementById('driverDoneList');
+  if(!done.length){
+    del.innerHTML='<p style="color:var(--gray);text-align:center;padding:30px">'+(df?'سفارشی در این تاریخ یافت نشد':'هنوز سفارشی تحویل نداده‌اید')+'</p>';
+  } else {
+    del.innerHTML=done.map(function(o){ return driverOrderCard(o,true); }).join('');
+  }
+}
+
+function clearDriverDoneDate(){
+  document.getElementById('driverDoneDate').value='';
+  document.getElementById('driverDoneDateDisplay').textContent='همه تاریخ‌ها';
+  renderDriverOrders();
+}
+
+async function loadDriverOrderImgs(oid, btn){
+  if(btn) btn.textContent='در حال بارگذاری...';
+  var data = await fetchOrderImages(oid);
+  var el = document.getElementById('driverImgs-'+oid);
+  if(!el) return;
+  if(data.images && data.images.length){
+    el.innerHTML='<div class="img-thumbs" style="margin-top:8px">'+data.images.map(function(s){
+      return '<img src="'+s+'" style="width:60px;height:60px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="openLightbox(\''+s+'\')" loading="lazy">';
+    }).join('')+'</div>';
+  } else {
+    el.innerHTML='<span style="font-size:0.78rem;color:var(--gray)">عکسی ندارد</span>';
+  }
+}
+
+function driverOrderCard(o, isDone){
+  var imgs='<div id="driverImgs-'+o.id+'">'
+    +'<button class="btn btn-secondary btn-sm" style="margin-top:6px;font-size:0.78rem" onclick="loadDriverOrderImgs('+o.id+',this)">نمایش عکس‌های سفارش</button>'
+    +'</div>';
+  var deliveryImgs=o.delivery_images&&o.delivery_images.length
+    ?'<div style="margin-top:8px;font-size:0.75rem;color:#558b2f;font-weight:600">عکس‌های تحویل شما:</div>'
+      +'<div class="delivery-imgs">'+o.delivery_images.map(function(s){return '<img src="'+s+'" onclick="openLightbox(\''+s+'\')">';}).join('')+'</div>'
+    :'';
+  var driverNoteBox='';
+  var bottom=isDone
+    ?'<div style="margin-top:10px;padding:7px 10px;background:#e8f5e9;border-radius:8px;font-size:0.78rem;color:#2e7d32;font-weight:600">تحویل داده شده — '+o.delivered_at+'</div>'+deliveryImgs+driverNoteBox
+    :'<div class="upload-proof" id="proof-wrap-'+o.id+'">'
+      +'<div class="upload-proof-area" onclick="document.getElementById(\'proof-'+o.id+'\').click()">'
+      +'<div style="font-size:1.2rem">دوربین</div>'
+      +'<p>عکس تحویل آپلود کنید (اختیاری)</p>'
+      +'<input type="file" id="proof-'+o.id+'" accept="image/*" multiple style="display:none" onchange="addProofImgs(this,'+o.id+')">'
+      +'</div>'
+      +'<div class="img-thumbs" id="proof-thumbs-'+o.id+'"></div>'
+      +'</div>'
+      +driverNoteBox
+      +'<button class="deliver-btn" id="deliver-btn-'+o.id+'" onclick="markDelivered('+o.id+')">تحویل دادم</button>';
+  var isUrgent=o.is_urgent||false;
+  return '<div class="d-card'+(isDone?' delivered-card':(!isDone&&isUrgent?' urgent-card':''))+'" id="dcard-'+o.id+'">'
+    +(isUrgent&&!isDone?'<div style="background:#fde8e8;color:var(--red);font-weight:700;font-size:0.88rem;padding:6px 10px;border-radius:6px;margin-bottom:8px;text-align:center">سفارش فوری — لطفاً سریع تحویل دهید</div>':'')
+    +'<div class="d-card-num">سفارش #'+o.order_id+'</div>'
+    +'<div class="d-card-row">'
+    +'نوع: <b>'+o.order_type+'</b><br>'
+    +'محصول: <b>'+o.product+'</b>'+(o.barcode?' — بارکد: <b>'+o.barcode+'</b>':'')+'<br>'
+    +'فروشنده: <b>'+(o.seller||'—')+'</b><br>'
+    +(o.supply_source?'منبع تامین: <b>'+o.supply_source+'</b><br>':'')
+    +'فرستنده: <b>'+(o.sender||'—')+'</b>'+(o.sender_phone?' — <b>'+o.sender_phone+'</b>':'')+'<br>'
+    +'گیرنده: <b>'+o.receiver+'</b>'+(o.receiver_phone?' — <b>'+o.receiver_phone+'</b>':'')+'<br>'
+    +'</div>'
+    +'<div style="background:#e8f4ff;border-right:4px solid #1565c0;border-radius:8px;padding:9px 12px;margin:8px 0;font-size:1rem;font-weight:700;color:#0d47a1;line-height:1.8">'
+    +'آدرس: '+o.address+'<br>'
+    +'تاریخ تحویل: '+o.delivery_date
+    +(o.time_slot?'<br><span style="font-size:1.1rem;color:#1565c0">بازه تحویل: '+o.time_slot+'</span>':'')
+    +'</div>'
+    +(o.notes?'<div class="d-card-row">توضیحات: <b>'+o.notes+'</b></div>':'')
+    +imgs
+    +bottom
+    +'</div>';
+}
+
+var proofImgBuffers={}; // oid -> {files:[], previews:[]}
+
+function addProofImgs(input,oid){
+  if(!proofImgBuffers[oid]) proofImgBuffers[oid]={files:[],previews:[]};
+  Array.from(input.files).forEach(function(file){
+    compressToFile(file, 900, 0.70).then(function(compressed){
+      proofImgBuffers[oid].files.push(compressed);
+      fileToBase64Preview(compressed).then(function(b64){
+        proofImgBuffers[oid].previews.push(b64);
+        var el=document.getElementById('proof-thumbs-'+oid);
+        if(el){
+          el.innerHTML=proofImgBuffers[oid].previews.map(function(s,i){
+            return '<div class="img-thumb-wrap"><img src="'+s+'" onclick="openLightbox(\''+s+'\')"><button class="img-thumb-del" onclick="removeProofImg('+oid+','+i+')">✕</button></div>';
+          }).join('');
+        }
+      });
+    });
+  });
+  input.value='';
+}
+
+function removeProofImg(oid,idx){
+  if(proofImgBuffers[oid]){
+    proofImgBuffers[oid].files.splice(idx,1);
+    proofImgBuffers[oid].previews.splice(idx,1);
+  }
+  var el=document.getElementById('proof-thumbs-'+oid);
+  if(el&&proofImgBuffers[oid]){
+    el.innerHTML=proofImgBuffers[oid].previews.map(function(s,i){
+      return '<div class="img-thumb-wrap"><img src="'+s+'" onclick="openLightbox(\''+s+'\')"><button class="img-thumb-del" onclick="removeProofImg('+oid+','+i+')">✕</button></div>';
+    }).join('');
+  }
+}
+
+async function markDelivered(oid){
+  var o=CACHE.orders.find(function(x){return x.id===oid;});
+  if(!o) return;
+  var btn=document.getElementById('deliver-btn-'+oid);
+  if(btn){btn.disabled=true;btn.textContent='در حال آپلود...';}
+  var deliveredAt=new Date().toLocaleDateString('fa-IR')+' '+new Date().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+  
+  // آپلود عکس‌های تحویل به Storage
+  var deliveryImageUrls = [];
+  if(proofImgBuffers[oid] && proofImgBuffers[oid].files.length){
+    if(btn) btn.textContent='در حال آپلود عکس‌ها...';
+    for(var i=0; i<proofImgBuffers[oid].files.length; i++){
+      var url = await uploadImageToStorage(proofImgBuffers[oid].files[i], 'delivery/'+o.order_id);
+      if(url) deliveryImageUrls.push(url);
+    }
+  }
+  
+  if(btn) btn.textContent='در حال ثبت...';
+  var res = await sb.from('orders').update({delivered:true, delivered_at:deliveredAt, delivery_images:deliveryImageUrls}).eq('id', oid);
+  if(res.error){
+    toast('خطا در ثبت تحویل: '+res.error.message, true);
+    if(btn){btn.disabled=false;btn.textContent='تحویل دادم';}
+    return;
+  }
+  delete proofImgBuffers[oid];
+  await addNotif('راننده '+o.driver_name+' سفارش شماره '+o.order_id+' را تحویل داد');
+  toast('سفارش تحویل داده شد');
+  await fetchOrders();
+  renderDriverOrders();
+}
+
+// ===================== REPORT =====================
+async function generateReport(){
+  await fetchOrders();
+  renderReportStats();
+}
+
+function renderReportStats(){
+  var from=document.getElementById('repFrom')?document.getElementById('repFrom').value:'';
+  var to=document.getElementById('repTo')?document.getElementById('repTo').value:'';
+  var orders=from&&to?CACHE.orders.filter(function(o){return o.delivery_date>=from&&o.delivery_date<=to;}):CACHE.orders;
+  var totalSales=orders.reduce(function(s,o){return s+(Number(o.sale_price)||0);},0);
+  var totalDrv=orders.reduce(function(s,o){return s+(Number(o.driver_price)||0);},0);
+  var delivered=orders.filter(function(o){return o.delivered;}).length;
+  var el=document.getElementById('reportStats');if(!el)return;
+  el.innerHTML='<div class="stat-row">'
+    +'<div class="stat-box"><div class="val">'+orders.length.toLocaleString('fa')+'</div><div class="lbl">کل سفارشات</div></div>'
+    +'<div class="stat-box"><div class="val">'+delivered.toLocaleString('fa')+'</div><div class="lbl">تحویل شده</div></div>'
+    +'<div class="stat-box"><div class="val">'+totalSales.toLocaleString('fa')+'</div><div class="lbl">جمع فروش (تومان)</div></div>'
+    +'<div class="stat-box" style="background:#e8f5e9"><div class="val" style="color:#2e7d32">'+(totalSales-totalDrv).toLocaleString('fa')+'</div><div class="lbl">سود خالص (تومان)</div></div>'
+    +'</div>';
+}
+
+async function exportExcel(){
+  await fetchOrders();
+  var from=document.getElementById('repFrom').value||'';
+  var to=document.getElementById('repTo').value||'';
+  var allOrders=from&&to?CACHE.orders.filter(function(o){return o.delivery_date>=from&&o.delivery_date<=to;}):CACHE.orders;
+  // سفارشات عادی
+  var orders=allOrders.filter(function(o){return o.order_type!=='جابه‌جایی';});
+  // جابه‌جایی
+  var transfers=allOrders.filter(function(o){return o.order_type==='جابه‌جایی';});
+  var wb=XLSX.utils.book_new();
+  var r1=[['شماره سفارش','نوع','محصول','بارکد','فروشنده','فرستنده','شماره فرستنده','گیرنده','شماره گیرنده','آدرس','تاریخ تحویل','بازه تحویل','راننده','دریافتی','پرداختی راننده','سود','وضعیت','توضیحات','تاریخ ثبت','تاریخ تحویل واقعی']];
+  orders.forEach(function(o){
+    var s=Number(o.sale_price)||0;var d=Number(o.driver_price)||0;
+    r1.push([o.order_id,o.order_type,o.product,o.barcode||'',o.seller||'',o.sender||'',o.sender_phone||'',o.receiver,o.receiver_phone||'',o.address,o.delivery_date,o.time_slot||'',o.driver_name||'',s,d,s-d,o.delivered?'تحویل شده':o.driver_id?'در راه':'بدون راننده',o.notes||'',o.created_at_fa||'',o.delivered_at||'']);
+  });
+  var ws1=XLSX.utils.aoa_to_sheet(r1);
+  XLSX.utils.book_append_sheet(wb,ws1,'سفارشات');
+  // شیت جابه‌جایی
+  if(transfers.length){
+    var r2=[['شماره','آدرس','مبدا','تاریخ','بازه','راننده','دریافتی','پرداختی راننده','سود','وضعیت','توضیحات','تاریخ ثبت']];
+    transfers.forEach(function(o){
+      var s=Number(o.sale_price)||0;var d=Number(o.driver_price)||0;
+      r2.push([o.order_id,o.address,o.notes||'',o.delivery_date,o.time_slot||'',o.driver_name||'',s,d,s-d,o.delivered?'تحویل شده':'در انتظار',o.notes||'',o.created_at_fa||'']);
+    });
+    var ws2=XLSX.utils.aoa_to_sheet(r2);
+    XLSX.utils.book_append_sheet(wb,ws2,'جابه‌جایی');
+  }
+  XLSX.writeFile(wb,'گزارش_وشه_'+(from||'کل')+'.xlsx');
+  toast('اکسل دانلود شد');
+}
+
+// ===================== SETTINGS =====================
+async function addDriver(){
+  var name=document.getElementById('driverName').value.trim();
+  var username=document.getElementById('driverUsername').value.trim();
+  var password=document.getElementById('driverPassword').value.trim();
+  var agency=document.getElementById('driverAgency').value;
+  if(!name||!username||!password){toast('نام، نام کاربری و رمز را پر کنید',true);return;}
+  var fullName = agency ? name+' ('+agency+')' : name;
+  var btn=document.getElementById('addDriverBtn');
+  btn.disabled=true; btn.textContent='در حال افزودن...';
+  var result = await callUserAdminFn({ action:'create', username:username, password:password, name:fullName, role:'driver' });
+  btn.disabled=false; btn.textContent='افزودن راننده';
+  if(!result) return;
+  // ذخیره agency در پروفایل
+  if(result.user && result.user.id && agency){
+    await sb.from('profiles').update({ agency: true }).eq('id', result.user.id);
+  }
+  document.getElementById('driverName').value='';
+  document.getElementById('driverUsername').value='';
+  document.getElementById('driverPassword').value='';
+  document.getElementById('driverAgency').value='';
+  await fetchProfiles();
+  renderDriversList();
+  toast('راننده اضافه شد');
+}
+
+function removeDriver(id){
+  toast('حذف راننده فعلاً از پنل ممکن نیست.', true);
+}
+
+async function editProfileName(id, oldName){
+  var newName = prompt('نام جدید را وارد کنید:', oldName||'');
+  if(newName===null) return;
+  newName = newName.trim();
+  if(!newName){ toast('نام نمی‌تواند خالی باشد', true); return; }
+  var res = await sb.from('profiles').update({ name:newName }).eq('id', id);
+  if(res.error){ toast('خطا: '+res.error.message, true); return; }
+  await fetchProfiles();
+  renderDriversList(); renderUsersList();
+  toast('✅ نام بروزرسانی شد');
+}
+
+async function resetUserPassword(id){
+  var newPass = prompt('رمز عبور جدید را وارد کنید (حداقل ۶ کاراکتر):');
+  if(newPass===null) return;
+  newPass = newPass.trim();
+  if(newPass.length<6){ toast('رمز باید حداقل ۶ کاراکتر باشد', true); return; }
+  var result = await callUserAdminFn({ action:'reset_password', targetId:id, newPassword:newPass });
+  if(!result) return;
+  toast('✅ رمز عبور تغییر کرد');
+}
+
+async function deleteUserAccount(id, name){
+  if(currentUser && currentUser.id===id){ toast('نمی‌توانید حساب خودتان را حذف کنید', true); return; }
+  if(!confirm('کاربر «'+name+'» برای همیشه حذف شود؟ این عمل قابل بازگشت نیست.')) return;
+  var result = await callUserAdminFn({ action:'delete', targetId:id });
+  if(!result) return;
+  await fetchProfiles();
+  renderDriversList(); renderUsersList();
+  toast('✅ کاربر حذف شد');
+}
+
+function escQuote(s){ return String(s||'').replace(/'/g, "\\'"); }
+
+function renderDriversList(){
+  var el=document.getElementById('driversList');
+  var drivers=CACHE.profiles.filter(function(p){return p.role==='driver';});
+  if(!drivers.length){el.innerHTML='<p style="color:var(--gray);font-size:0.82rem">رانندهای ثبت نشده</p>';return;}
+  el.innerHTML=drivers.map(function(d){
+    var agencyLabel = d.agency ? '<span style="font-size:0.75rem;color:#7b5ea7;background:#f3e8ff;padding:2px 7px;border-radius:8px;margin-right:6px">آژانس</span>' : '';
+    return '<div class="driver-item" style="flex-wrap:wrap;justify-content:space-between">'
+      +'<div style="flex:1;min-width:100px">'
+      +'<div style="font-weight:600;font-size:0.86rem">'+d.name+agencyLabel+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      +'<button class="btn btn-secondary btn-sm" onclick="editProfileName(\''+d.id+'\',\''+escQuote(d.name)+'\')">ویرایش نام</button>'
+      +'<button class="btn btn-secondary btn-sm" onclick="resetUserPassword(\''+d.id+'\')">تغییر رمز</button>'
+      +'<button class="btn btn-danger btn-sm" onclick="deleteUserAccount(\''+d.id+'\',\''+escQuote(d.name)+'\')">حذف</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+async function addUser(){
+  var name=document.getElementById('newName').value.trim();
+  var username=document.getElementById('newUsername').value.trim();
+  var password=document.getElementById('newPassword').value.trim();
+  if(!name||!username||!password){toast('همه فیلدها را پر کنید',true);return;}
+  var btn=document.getElementById('addUserBtn');
+  btn.disabled=true; btn.textContent='در حال افزودن...';
+  var result = await callUserAdminFn({ action:'create', username:username, password:password, name:name, role:'admin' });
+  btn.disabled=false; btn.textContent='افزودن ادمین';
+  if(!result) return;
+  document.getElementById('newName').value='';
+  document.getElementById('newUsername').value='';
+  document.getElementById('newPassword').value='';
+  await fetchProfiles();
+  renderUsersList();
+  toast('✅ ادمین اضافه شد');
+}
+
+// removeUser is replaced by deleteUserAccount / editProfileName below
+
+function renderUsersList(){
+  var el=document.getElementById('usersList');
+  var admins=CACHE.profiles.filter(function(p){return p.role==='admin';});
+  el.innerHTML=admins.map(function(u){
+    return '<div class="user-item" style="flex-wrap:wrap">'
+      +'<div>'
+      +'<div style="font-weight:600;font-size:0.86rem">'+u.name+'</div>'
+      +'<div style="font-size:0.7rem;color:var(--gray)">ادمین</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      +'<button class="btn btn-secondary btn-sm" onclick="editProfileName(\''+u.id+'\',\''+escQuote(u.name)+'\')">ویرایش نام</button>'
+      +'<button class="btn btn-secondary btn-sm" onclick="resetUserPassword(\''+u.id+'\')">تغییر رمز</button>'
+      +'<button class="btn btn-danger btn-sm" onclick="deleteUserAccount(\''+u.id+'\',\''+escQuote(u.name)+'\')">حذف</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function updateHeaderCount(){
+  var el=document.getElementById('orderCount');
+  if(el) el.textContent=CACHE.orders.length.toLocaleString('fa')+' سفارش';
+  updateNotifBadge();
+}
+
+// ===================== EDIT MODAL =====================
+function openEditModal(id){
+  var o=CACHE.orders.find(function(x){return x.id===id;});
+  if(!o){toast('سفارش یافت نشد',true);return;}
+  document.getElementById('editId').value=o.id;
+  document.getElementById('editOrderId').value=o.order_id||'';
+  document.getElementById('editOrderType').value=o.order_type||'گل';
+  document.getElementById('editIsUrgent').checked=o.is_urgent||false;
+  document.getElementById('editSupplySource').value=o.supply_source||'';
+  document.getElementById('editProduct').value=o.product||'';
+  document.getElementById('editBarcode').value=o.barcode||'';
+  document.getElementById('editSeller').value=o.seller||'';
+  document.getElementById('editSender').value=o.sender||'';
+  document.getElementById('editSenderPhone').value=o.sender_phone||'';
+  document.getElementById('editReceiver').value=o.receiver||'';
+  document.getElementById('editReceiverPhone').value=o.receiver_phone||'';
+  document.getElementById('editAddress').value=o.address||'';
+  document.getElementById('editDeliveryDate').value=o.delivery_date||'';
+  document.getElementById('editDeliveryDateDisplay').textContent=o.delivery_date||'انتخاب تاریخ';
+  document.getElementById('editTimeSlot').value=o.time_slot||'';
+  document.getElementById('editInternalSlot').value=o.internal_slot||'';
+  document.getElementById('editSalePrice').value=o.sale_price||'';
+  document.getElementById('editDriverPrice').value=o.driver_price||'';
+  document.getElementById('editNotes').value=o.notes||'';
+  calcEditDiff();
+  // پاک کردن عکس‌های قبلی هنگام باز شدن مودال
+  editImgFiles=[];editImgData=[];
+  document.getElementById('editImgThumbs').innerHTML='';
+  document.getElementById('editImgInput').value='';
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeEditModal(){document.getElementById('editModal').classList.remove('open');}
+
+function calcEditDiff(){
+  var s=parseInt(document.getElementById('editSalePrice').value)||0;
+  var d=parseInt(document.getElementById('editDriverPrice').value)||0;
+  var diff=s-d;var el=document.getElementById('editDiffVal');
+  if(s||d){el.textContent=diff.toLocaleString('fa')+' تومان';el.style.color=diff>=0?'var(--green)':'var(--red)';}
+  else el.textContent='—';
+}
+
+async function saveEdit(){
+  var id=parseInt(document.getElementById('editId').value);
+  var orderId=document.getElementById('editOrderId').value.trim();
+  var product=document.getElementById('editProduct').value.trim();
+  var receiver=document.getElementById('editReceiver').value.trim();
+  var address=document.getElementById('editAddress').value.trim();
+  var deliveryDate=document.getElementById('editDeliveryDate').value.trim();
+  if(!orderId||!product||!receiver||!address||!deliveryDate){toast('فیلدهای ستاره‌دار را پر کنید',true);return;}
+  var saveBtn=document.querySelector('#editModal .btn-primary');
+  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='در حال ذخیره...';}
+  // آپلود عکس‌های جدید و اضافه به لیست قبلی
+  var newUrls = [];
+  if(editImgFiles.length){
+    if(saveBtn) saveBtn.textContent='در حال آپلود عکس‌ها...';
+    for(var i=0;i<editImgFiles.length;i++){
+      var url = await uploadImageToStorage(editImgFiles[i], 'orders/'+orderId);
+      if(url) newUrls.push(url);
+    }
+  }
+  var updateData={
+    order_id:orderId,
+    order_type:document.getElementById('editOrderType').value,
+    is_urgent:document.getElementById('editIsUrgent').checked,
+    supply_source:document.getElementById('editSupplySource').value,
+    product:product,
+    barcode:document.getElementById('editBarcode').value.trim(),
+    seller:document.getElementById('editSeller').value,
+    sender:document.getElementById('editSender').value.trim(),
+    sender_phone:document.getElementById('editSenderPhone').value.trim(),
+    receiver:receiver,
+    receiver_phone:document.getElementById('editReceiverPhone').value.trim(),
+    address:address,
+    delivery_date:deliveryDate,
+    time_slot:document.getElementById('editTimeSlot').value.trim(),
+    internal_slot:document.getElementById('editInternalSlot').value,
+    sale_price:numOrNull('editSalePrice'),
+    driver_price:numOrNull('editDriverPrice'),
+    notes:document.getElementById('editNotes').value.trim()
+  };
+  if(newUrls.length){
+    // عکس‌های جدید رو به لیست قبلی اضافه کن
+    var existing = CACHE.orders.find(function(o){return o.id===id;});
+    var oldImgs = (existing && existing.images) ? existing.images : [];
+    updateData.images = oldImgs.concat(newUrls);
+  }
+  var res = await sb.from('orders').update(updateData).eq('id', id);
+  if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='ذخیره تغییرات';}
+  if(res.error){ toast('خطا در ویرایش: '+res.error.message, true); return; }
+  editImgFiles=[];editImgData=[];
+  closeEditModal();
+  await fetchOrders();
+  renderList();
+  toast('✅ سفارش ویرایش شد');
+}
+
+document.addEventListener('click',function(e){
+  if(e.target&&e.target.id==='editModal') closeEditModal();
+});
+
+// ===================== DELIVERY REMINDER =====================
+// هر دقیقه چک می‌کنه آیا سفارشی یک ساعت دیگه تحویل داره
+var reminderSentIds = [];
+
+function parseTimeSlotHour(slot){
+  // اول اعداد فارسی رو به انگلیسی تبدیل می‌کنه
+  if(!slot) return null;
+  var clean = slot.replace(/[۰-۹]/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
+  // اولین عدد رو از رشته می‌کشه — چه 11 باشه، چه 11:30، چه 11-12، چه 11_11:30
+  var match = clean.match(/(\d{1,2}):(\d{2})/);
+  if(match) return {h: parseInt(match[1]), m: parseInt(match[2])};
+  var matchH = clean.match(/\d{1,2}/);
+  if(matchH) return {h: parseInt(matchH[0]), m: 0};
+  return null;
+}
+
+function jalaliToday(){
+  var n=new Date();
+  return toJalali(n.getFullYear(), n.getMonth()+1, n.getDate()).join('/').replace(/(\d+)\/(\d+)\/(\d+)/, function(_, y, m, d){
+    return y + '/' + (m<10?'0'+m:m) + '/' + (d<10?'0'+d:d);
+  });
+}
+
+function checkDeliveryReminders(){
+  if(!CACHE.orders || !CACHE.orders.length) return;
+  var now = new Date();
+  var todayFa = jalaliToday();
+  CACHE.orders.forEach(function(o){
+    if(o.delivered) return;
+    if(!o.delivery_date || !o.time_slot) return;
+    // فقط سفارشات امروز
+    if(o.delivery_date !== todayFa) return;
+    var t = parseTimeSlotHour(o.time_slot);
+    if(!t) return;
+    // یک ساعت قبل
+    var deliveryTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), t.h, t.m, 0);
+    var reminderTime = new Date(deliveryTime.getTime() - 60*60*1000);
+    var diff = now - reminderTime;
+    // اگه الان بین زمان یادآوری و ۵ دقیقه بعدش هست (پنجره ۵ دقیقه‌ای)
+    if(diff >= 0 && diff < 5*60*1000){
+      var key = o.id + '_' + t.h + ':' + t.m;
+      if(reminderSentIds.indexOf(key) === -1){
+        reminderSentIds.push(key);
+        addNotif('یادآوری: سفارش #'+o.order_id+' برای '+o.receiver+' ساعت '+o.time_slot+' تحویل دارد — '+o.address);
+        // اگه مرورگر از Web Notifications پشتیبانی کنه
+        if(window.Notification && Notification.permission === 'granted'){
+          new Notification('یادآوری وشه', { body: 'سفارش #'+o.order_id+' — '+o.receiver+' — ساعت '+o.time_slot });
+        }
+        toast('یادآوری: سفارش #'+o.order_id+' یک ساعت دیگه تحویل دارد');
+      }
+    }
+  });
+}
+
+// درخواست مجوز نوتیفیکیشن مرورگر هنگام لاگین ادمین
+function requestNotifPermission(){
+  if(window.Notification && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+
+// استارت تایمر چک یادآوری — هر ۶۰ ثانیه
+var reminderInterval = null;
+function startReminderTimer(){
+  if(reminderInterval) clearInterval(reminderInterval);
+  reminderInterval = setInterval(checkDeliveryReminders, 60*1000);
+  // یه بار فوری چک کن
+  checkDeliveryReminders();
+}
+</script>
+</body>
+</html>
